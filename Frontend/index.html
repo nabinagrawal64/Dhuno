@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Epilogue:wght@700;800&family=Manrope:wght@300;400;500;600;700&family=Sora:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function() {
+        try {
+          var themeId = localStorage.getItem('dhuno-theme') || 'neon';
+          if (themeId !== 'neon') {
+            // Simple mapping for background colors to avoid harsh flashes
+            var bgs = {
+              'coral': '#1a110e',
+              'violet': '#13101a',
+              'emerald': '#0e1511',
+              'crimson': '#1a0f11'
+            };
+            if (bgs[themeId]) {
+              document.documentElement.style.setProperty('--color-background', bgs[themeId]);
+              document.documentElement.style.setProperty('--color-surface', bgs[themeId]);
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <title>Dhuno</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
