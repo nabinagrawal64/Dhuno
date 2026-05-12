@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Music2, PlayCircle, PauseCircle, PencilLine, Upload, FileAudio2, ImageUp, LoaderCircle, X, Check } from 'lucide-react';
+import { Music2, PlayCircle, PauseCircle, PencilLine, Upload, FileAudio2, ImageUp, LoaderCircle, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { songService, type SongItem } from '../../api/song.service';
 import { usePlayer } from '../../context/PlayerContext';
