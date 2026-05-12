@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ThemePicker from '../../components/ThemePicker'
+import { authUtils } from '../../utils/auth'
 
 type SettingsTab = 'account' | 'appearance'
 
@@ -20,6 +22,11 @@ const accountSections = [
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<SettingsTab>('account')
+    const navigate = useNavigate()
+
+    const handleLogout = async () => {
+        await authUtils.logout(() => navigate('/login'))
+    }
 
     return (
         <div className="overflow-hidden bg-surface-dim text-on-surface min-h-screen">
@@ -305,9 +312,17 @@ export default function SettingsPage() {
                                                     and remove saved data.
                                                 </p>
                                             </div>
-                                            <button className="mt-6 w-full bg-red-600 cursor-pointer rounded-full border border-[#ffb8bb]/30 text-[#ffb8bb] font-bold py-3 hover:bg-red-400 transition-colors">
-                                                Deactivate Account
-                                            </button>
+                                            <div className="flex flex-col gap-3 mt-6">
+                                                <button 
+                                                    onClick={handleLogout}
+                                                    className="w-full bg-orange-600 cursor-pointer rounded-full border border-orange-400/30 text-orange-200 font-bold py-3 hover:bg-orange-500 transition-colors"
+                                                >
+                                                    Logout
+                                                </button>
+                                                <button className="w-full bg-red-600 cursor-pointer rounded-full border border-[#ffb8bb]/30 text-[#ffb8bb] font-bold py-3 hover:bg-red-400 transition-colors">
+                                                    Deactivate Account
+                                                </button>
+                                            </div>
                                         </div>
                                     </section>
                                 </div>

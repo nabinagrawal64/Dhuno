@@ -1,4 +1,139 @@
-﻿export default function SignupPage() {
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { authService } from "../../api/auth.service";
+import toast from "react-hot-toast";
+import { authUtils } from "../../utils/auth";
+import { rateLimitUtils } from "../../utils/rateLimit";
+import { validationUtils } from "../../utils/validation";
+import { loggerUtils } from "../../utils/logger";
+import { useGoogleLogin } from '@react-oauth/google';
+
+export default function SignupPage() {
+    const navigate = useNavigate();
+
+    const [formData, setFormData] = useState({
+        fullName: "",
+        username: "",
+        email: "",
+        password: "",
+        confirm: "",
+    });
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                setIsLoading(true);
+                const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const userInfo = await userInfoResponse.json();
+                
+                const response = await authService.googleAuth({
+                    email: userInfo.email,
+                    fullName: userInfo.name,
+                    avatar: userInfo.picture,
+                    googleId: userInfo.sub,
+                });
+                
+                if (response.token) {
+                    authUtils.saveToken(response.token);
+                    loggerUtils.logAuthEvent("googleSignup", { email: userInfo.email });
+                }
+                
+                toast.success("Google signup successful!");
+                navigate("/home");
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    toast.error(err.message || "Google signup failed");
+                } else {
+                    toast.error("An unknown error occurred during Google signup");
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        onError: () => toast.error('Google Signup Failed'),
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Validate form data
+        const validation = validationUtils.validateSignupForm(formData);
+        if (!validation.isValid) {
+            Object.values(validation.errors).forEach((error) => {
+                toast.error(error);
+            });
+            return;
+        }
+
+        if (!acceptTerms) {
+            toast.error("You must accept the terms of service");
+            return;
+        }
+
+        // Check rate limit
+        const rateLimitCheck = rateLimitUtils.checkLimit("signup");
+        if (!rateLimitCheck.allowed) {
+            const remaining = rateLimitUtils.getRemaining("signup");
+            const retryAfter = rateLimitUtils.getRetryAfter("signup");
+            toast.error(
+                `Too many signup attempts. Please try again in ${retryAfter} seconds.\nRemaining attempts: ${remaining}`
+            );
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const response = await authService.signup({
+                fullName: formData.fullName,
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+            });
+            
+            // Save token to localStorage
+            if (response.token) {
+                authUtils.saveToken(response.token);
+                // Reset rate limit on successful signup
+                rateLimitUtils.reset("signup");
+                // Log signup event
+                loggerUtils.logAuthEvent("signup", { 
+                    email: formData.email, 
+                    username: formData.username 
+                });
+            }
+            
+            toast.success("Account created successfully!");
+            // Redirect to home on success
+            navigate("/home"); 
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                loggerUtils.warn("Signup failed", { 
+                    email: formData.email, 
+                    username: formData.username,
+                    error: err.message 
+                });
+                toast.error(err.message || "Signup failed");
+            } else {
+                loggerUtils.error("Unknown signup error", undefined, { 
+                    email: formData.email, 
+                    username: formData.username
+                });
+                toast.error("An unknown error occurred");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="bg-surface-dim text-on-surface font-body selection:bg-primary selection:text-on-primary lg:h-screen lg:overflow-hidden">
             <style
@@ -91,7 +226,7 @@
                                 </p>
                             </div>
 
-                            <form className="space-y-6">
+                            <form className="space-y-4" onSubmit={handleSubmit}>
                                 <div className="space-y-1">
                                     <label className="font-label text-[10px] uppercase tracking-widest text-secondary opacity-70 ml-1">
                                         Full Name
@@ -100,6 +235,25 @@
                                         className="w-full bg-surface-container-low border-transparent focus:border-transparent focus:ring-0 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-slate-600 font-body transition-all focus:shadow-[0_2px_0_0_rgba(90,255,225,1)]"
                                         placeholder="Enter your name"
                                         type="text"
+                                        name="fullName"
+                                        value={formData.fullName}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="font-label text-[10px] uppercase tracking-widest text-secondary opacity-70 ml-1">
+                                        Username
+                                    </label>
+                                    <input
+                                        className="w-full bg-surface-container-low border-transparent focus:border-transparent focus:ring-0 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-slate-600 font-body transition-all focus:shadow-[0_2px_0_0_rgba(90,255,225,1)]"
+                                        placeholder="Enter username"
+                                        type="text"
+                                        name="username"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        required
                                     />
                                 </div>
 
@@ -111,6 +265,10 @@
                                         className="w-full bg-surface-container-low border-transparent focus:border-transparent focus:ring-0 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-slate-600 font-body transition-all focus:shadow-[0_2px_0_0_rgba(90,255,225,1)]"
                                         placeholder="you@nocturne.com"
                                         type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
                                     />
                                 </div>
 
@@ -123,6 +281,11 @@
                                             className="w-full bg-surface-container-low border-transparent focus:border-transparent focus:ring-0 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-slate-600 font-body transition-all focus:shadow-[0_2px_0_0_rgba(90,255,225,1)]"
                                             placeholder="Example@123"
                                             type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
+                                            minLength={6}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -133,6 +296,11 @@
                                             className="w-full bg-surface-container-low border-transparent focus:border-transparent focus:ring-0 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-slate-600 font-body transition-all focus:shadow-[0_2px_0_0_rgba(90,255,225,1)]"
                                             placeholder="Example@123"
                                             type="password"
+                                            name="confirm"
+                                            value={formData.confirm}
+                                            onChange={handleChange}
+                                            required
+                                            minLength={6}
                                         />
                                     </div>
                                 </div>
@@ -143,6 +311,8 @@
                                             aria-label="term"
                                             className="w-4 h-4 rounded border-outline-variant bg-surface-container-high text-primary focus:ring-offset-surface-dim focus:ring-primary cursor-pointer"
                                             type="checkbox"
+                                            checked={acceptTerms}
+                                            onChange={(e) => setAcceptTerms(e.target.checked)}
                                         />
                                     </div>
                                     <label className="text-xs text-on-surface-variant font-body leading-relaxed">
@@ -163,20 +333,46 @@
                                     </label>
                                 </div>
 
-                                <button className="w-full primary-gradient text-on-primary lg:py-4 py-2.5 rounded-full font-headline font-bold text-base hover:scale-[1.02] active:scale-95 transition-all duration-200 glow-shadow mt-4">
-                                    Create Account
+                                <button 
+                                    type="submit" 
+                                    disabled={isLoading}
+                                    className="w-full cursor-pointer primary-gradient text-on-primary lg:py-4 py-2.5 rounded-full font-headline font-bold text-base hover:scale-[1.02] active:scale-95 transition-all duration-200 glow-shadow mt-4 disabled:opacity-70 disabled:hover:scale-100"
+                                >
+                                    {isLoading ? "Creating Account..." : "Create Account"}
                                 </button>
                             </form>
+
+                            {/* Divider */}
+                            <div className="relative flex items-center justify-center my-6 mt-8">
+                                <div className="w-full h-px bg-outline-variant/30" />
+                                <span className="absolute px-4 bg-[#14181f] text-[10px] uppercase tracking-widest text-slate-500">
+                                    Or continue with
+                                </span>
+                            </div>
+
+                            {/* Social Logins */}
+                            <div className="flex gap-4">
+                                {/* google */}
+                                <button type="button" onClick={() => handleGoogleLogin()} className="w-full flex cursor-pointer items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" />
+                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" />
+                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="currentColor" />
+                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" />
+                                    </svg>
+                                    <span className="text-sm font-medium">Google</span>
+                                </button>
+                            </div>
 
                             <div className="mt-10 text-center">
                                 <p className="text-sm text-on-surface-variant font-body">
                                     Already have an account?
-                                    <a
+                                    <Link
                                         className="text-primary font-bold ml-1 hover:underline underline-offset-4 decoration-2"
-                                        href="#"
+                                        to="/login"
                                     >
                                         Login
-                                    </a>
+                                    </Link>
                                 </p>
                             </div>
                         </div>

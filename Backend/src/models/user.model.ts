@@ -1,7 +1,5 @@
 import mongoose, { Schema, Document, Types, } from "mongoose";
 
-import bcrypt from "bcryptjs";
-
 export interface IUser extends Document {
     // BASIC INFO
     fullName: string;
@@ -64,10 +62,9 @@ export interface IUser extends Document {
         expiresAt?: Date;
     };
 
-    // PASSWORD COMPARE
-    comparePassword(
-        enteredPassword: string
-    ): Promise<boolean>;
+    // PASSWORD RESET
+    resetPasswordOTP?: string;
+    resetPasswordOTPExpires?: Date;
 
     createdAt: Date;
     updatedAt: Date;
@@ -276,38 +273,22 @@ const userSchema = new Schema<IUser>(
 
             expiresAt: Date,
         },
+
+        // PASSWORD RESET
+        resetPasswordOTP: {
+            type: String,
+            select: false,
+        },
+
+        resetPasswordOTPExpires: {
+            type: Date,
+            select: false,
+        },
     },
     {
         timestamps: true,
     }
 );
-
-// HASH PASSWORD BEFORE SAVE
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) {
-        return next();
-    }
-
-    const salt = await bcrypt.genSalt(10);
-
-    this.password = await bcrypt.hash(
-        this.password,
-        salt
-    );
-
-    next();
-});
-
-// COMPARE PASSWORD
-userSchema.methods.comparePassword =
-    async function (
-        enteredPassword: string
-    ): Promise<boolean> {
-        return await bcrypt.compare(
-            enteredPassword,
-            this.password
-        );
-    };
 
 const User = mongoose.model<IUser>(
     "User",

@@ -1,12 +1,19 @@
-{
+    {
     "compilerOptions": {
         "target": "ES2020",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "rootDir": "./",
+        "rootDir": "./src",
         "outDir": "./dist",
         "strict": true,
         "esModuleInterop": true,
-        "skipLibCheck": true
-    }
+        "skipLibCheck": true,
+
+        "typeRoots": [
+        "./node_modules/@types",
+        "./src/types"
+        ]
+    },
+
+    "include": ["src"]
 }

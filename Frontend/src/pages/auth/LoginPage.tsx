@@ -1,4 +1,114 @@
-﻿export default function LoginPage() {
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { authService } from "../../api/auth.service";
+import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
+import { authUtils } from "../../utils/auth";
+import { rateLimitUtils } from "../../utils/rateLimit";
+import { validationUtils } from "../../utils/validation";
+import { loggerUtils } from "../../utils/logger";
+import { useGoogleLogin } from '@react-oauth/google';
+
+export default function LoginPage() {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+    });
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+
+    const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                setIsLoading(true);
+                const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const userInfo = await userInfoResponse.json();
+                
+                const response = await authService.googleAuth({
+                    email: userInfo.email,
+                    fullName: userInfo.name,
+                    avatar: userInfo.picture,
+                    googleId: userInfo.sub,
+                });
+                
+                if (response.token) {
+                    authUtils.saveToken(response.token);
+                    loggerUtils.logAuthEvent("googleLogin", { email: userInfo.email });
+                }
+                
+                toast.success("Google login successful!");
+                navigate("/home");
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    toast.error(err.message || "Google login failed");
+                } else {
+                    toast.error("An unknown error occurred during Google login");
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        onError: () => toast.error('Google Login Failed'),
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Validate form data
+        const validation = validationUtils.validateLoginForm(formData);
+        if (!validation.isValid) {
+            Object.values(validation.errors).forEach((error) => {
+                toast.error(error);
+            });
+            return;
+        }
+
+        // Check rate limit
+        const rateLimitCheck = rateLimitUtils.checkLimit("login");
+        if (!rateLimitCheck.allowed) {
+            const remaining = rateLimitUtils.getRemaining("login");
+            const retryAfter = rateLimitUtils.getRetryAfter("login");
+            toast.error(
+                `Too many login attempts. Please try again in ${retryAfter} seconds.\nRemaining attempts: ${remaining}`
+            );
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const response = await authService.login(formData);
+            
+            // Save token to localStorage
+            if (response.token) {
+                authUtils.saveToken(response.token);
+                // Reset rate limit on successful login
+                rateLimitUtils.reset("login");
+                // Log login event
+                loggerUtils.logAuthEvent("login", { email: formData.email });
+            }
+            
+            toast.success("Login successful!");
+            navigate("/home"); // Navigate to home or dashboard after successful login
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                loggerUtils.warn("Login failed", { email: formData.email, error: err.message });
+                toast.error(err.message || "Login failed");
+            } else {
+                loggerUtils.error("Unknown login error", undefined, { email: formData.email });
+                toast.error("An unknown error occurred");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="bg-surface-dim text-on-surface font-body lg:h-screen lg:overflow-hidden">
             <style
@@ -104,7 +214,7 @@
                                 </h2>
                             </div>
 
-                            <form className="space-y-6">
+                            <form className="space-y-6" onSubmit={handleSubmit}>
                                 {/* Email Field */}
                                 <div className="space-y-2">
                                     <label
@@ -119,6 +229,9 @@
                                             id="email"
                                             placeholder="name@example.com"
                                             type="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -132,27 +245,34 @@
                                         >
                                             Password
                                         </label>
-                                        <a
+                                        <Link
                                             className="text-xs text-secondary hover:text-primary transition-colors"
-                                            href="#"
+                                            to="/forgot-password"
                                         >
                                             Forgot password?
-                                        </a>
+                                        </Link>
                                     </div>
                                     <div className="relative group">
                                         <input
                                             className="w-full bg-surface-container-low border-none focus:ring-1 focus:ring-primary/40 rounded-lg py-4 px-5 text-on-surface placeholder:text-slate-600 transition-all duration-300"
                                             id="password"
                                             placeholder="Example@123"
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
                                         />
                                         <button
                                             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-on-surface"
                                             type="button"
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                            onClick={() => setShowPassword((current) => !current)}
                                         >
-                                            <span className="material-symbols-outlined text-xl">
-                                                visibility
-                                            </span>
+                                            {showPassword ? (
+                                                <EyeOff className="h-5 w-5" />
+                                            ) : (
+                                                <Eye className="h-5 w-5" />
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -175,10 +295,11 @@
 
                                 {/* Login Button */}
                                 <button
-                                    className="w-full primary-gradient text-on-primary lg:py-4 py-2.5 rounded-full font-headline font-bold text-base hover:scale-[1.02] active:scale-95 transition-all duration-200 glow-shadow mt-4"
+                                    className="w-full cursor-pointer primary-gradient text-on-primary lg:py-4 py-2.5 rounded-full font-headline font-bold text-base hover:scale-[1.02] active:scale-95 transition-all duration-200 glow-shadow mt-4 disabled:opacity-70 disabled:hover:scale-100"
                                     type="submit"
+                                    disabled={isLoading}
                                 >
-                                    Login
+                                    {isLoading ? "Logging in..." : "Login"}
                                 </button>
                             </form>
 
@@ -192,7 +313,8 @@
 
                             {/* Social Logins */}
                             <div className="grid grid-cols-2 gap-4">
-                                <button className="flex items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
+                                {/* google */}
+                                <button type="button" onClick={() => handleGoogleLogin()} className="flex cursor-pointer items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
                                     <svg
                                         className="w-5 h-5"
                                         viewBox="0 0 24 24"
@@ -218,7 +340,9 @@
                                         Google
                                     </span>
                                 </button>
-                                <button className="flex items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
+                                
+                                {/* apple */}
+                                <button className="flex cursor-pointer items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
                                     <svg
                                         className="w-5 h-5"
                                         viewBox="0 0 24 24"
@@ -237,12 +361,12 @@
                             <div className="mt-10 text-center">
                                 <p className="text-on-surface-variant text-sm">
                                     New to the Dhuno?
-                                    <a
+                                    <Link
                                         className="text-primary font-bold ml-1 hover:underline"
-                                        href="#"
+                                        to="/signup"
                                     >
                                         Sign up
-                                    </a>
+                                    </Link>
                                 </p>
                             </div>
                         </div>
