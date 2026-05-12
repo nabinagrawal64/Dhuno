@@ -8,7 +8,7 @@ export default function AuthProtectedRoute({
 }) {
     // If user is authenticated, redirect to home
     if (authUtils.isAuthenticated()) {
-        return <Navigate to="/home" replace />;
+        return <Navigate to={authUtils.getLandingPath(authUtils.getRole())} replace />;
     }
 
     // Otherwise render the auth page

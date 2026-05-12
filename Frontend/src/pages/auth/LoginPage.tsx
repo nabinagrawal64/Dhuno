@@ -15,8 +15,31 @@ export default function LoginPage() {
         email: "",
         password: "",
     });
+    const [accountRole, setAccountRole] = useState<"user" | "artist">("user");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    const showRoleMismatchToast = (message: string) => {
+        const roleMatch = message.match(/registered as a\s+(user|artist|admin)/i);
+        const role = roleMatch?.[1]?.toLowerCase();
+
+        if (role === "artist") {
+            toast.error("This account is registered as an artist. Select Artist and login again.");
+            return;
+        }
+
+        if (role === "user") {
+            toast.error("This account is registered as a user. Select User and login again.");
+            return;
+        }
+
+        if (role === "admin") {
+            toast.error("This account is registered as an admin. Use the admin login flow.");
+            return;
+        }
+
+        toast.error(message);
+    };
 
     const handleGoogleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -32,18 +55,30 @@ export default function LoginPage() {
                     fullName: userInfo.name,
                     avatar: userInfo.picture,
                     googleId: userInfo.sub,
+                    role: accountRole,
                 });
                 
                 if (response.token) {
+                    if (response.user?.role && response.user.role !== accountRole) {
+                        authUtils.removeToken();
+                        authUtils.removeRole();
+                        toast.error(`This Google account is registered as a ${response.user.role}.`);
+                        return;
+                    }
+                    authUtils.saveRole(response.user?.role ?? accountRole);
                     authUtils.saveToken(response.token);
                     loggerUtils.logAuthEvent("googleLogin", { email: userInfo.email });
                 }
                 
                 toast.success("Google login successful!");
-                navigate("/home");
+                navigate(authUtils.getLandingPath(authUtils.getRole() ?? accountRole));
             } catch (err: unknown) {
                 if (err instanceof Error) {
-                    toast.error(err.message || "Google login failed");
+                    if (err.message.toLowerCase().includes("registered as a")) {
+                        showRoleMismatchToast(err.message);
+                    } else {
+                        toast.error(err.message || "Google login failed");
+                    }
                 } else {
                     toast.error("An unknown error occurred during Google login");
                 }
@@ -83,10 +118,20 @@ export default function LoginPage() {
 
         try {
             setIsLoading(true);
-            const response = await authService.login(formData);
+            const response = await authService.login({
+                ...formData,
+                role: accountRole,
+            });
             
             // Save token to localStorage
             if (response.token) {
+                if (response.user?.role && response.user.role !== accountRole) {
+                    authUtils.removeToken();
+                    authUtils.removeRole();
+                    toast.error(`This account is registered as a ${response.user.role}.`);
+                    return;
+                }
+                authUtils.saveRole(response.user?.role ?? accountRole);
                 authUtils.saveToken(response.token);
                 // Reset rate limit on successful login
                 rateLimitUtils.reset("login");
@@ -95,11 +140,15 @@ export default function LoginPage() {
             }
             
             toast.success("Login successful!");
-            navigate("/home"); // Navigate to home or dashboard after successful login
+            navigate(authUtils.getLandingPath(authUtils.getRole() ?? accountRole)); // Navigate to role dashboard after successful login
         } catch (err: unknown) {
             if (err instanceof Error) {
                 loggerUtils.warn("Login failed", { email: formData.email, error: err.message });
-                toast.error(err.message || "Login failed");
+                if (err.message.toLowerCase().includes("registered as a")) {
+                    showRoleMismatchToast(err.message);
+                } else {
+                    toast.error(err.message || "Login failed");
+                }
             } else {
                 loggerUtils.error("Unknown login error", undefined, { email: formData.email });
                 toast.error("An unknown error occurred");
@@ -208,13 +257,35 @@ export default function LoginPage() {
                         </div>
 
                         <div className="glass-panel w-full max-w-[90%] sm:max-w-md p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl glow-shadow border border-white/5 relative z-10 mx-auto">
-                            <div className="mb-8 pl-1 sm:mb-10 sm:pl-0">
+                            <div className="mb-3 pl-1 md:mb-5 sm:pl-0">
                                 <h2 className="font-headline text-2xl sm:text-3xl font-bold mb-2">
                                     Welcome Back
                                 </h2>
                             </div>
 
-                            <form className="space-y-6" onSubmit={handleSubmit}>
+                            <form className="space-y-4" onSubmit={handleSubmit}>
+                                {/* role */}
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-5 lg:gap-10">
+                                        {(["user", "artist"] as const).map((role) => (
+                                            <button
+                                                key={role}
+                                                type="button"
+                                                onClick={() => setAccountRole(role)}
+                                                className={`rounded-xl lg:p-2 lg:py-3 p-1 py-2 lg:text-sm text-xs font-semibold uppercase tracking-widest transition-all border ${accountRole === role
+                                                    ? "bg-primary text-on-primary border-primary shadow-[0_0_0_1px_rgba(90,255,225,0.4)]"
+                                                    : "bg-surface-container-low text-on-surface-variant border-white/5 hover:border-primary/40"
+                                                    }`}
+                                            >
+                                                {role}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="lg:text-xs text-[10px] text-on-surface-variant/70 ml-1">
+                                        Choose the same account type you registered with.
+                                    </p>
+                                </div>
+
                                 {/* Email Field */}
                                 <div className="space-y-2">
                                     <label
@@ -358,7 +429,7 @@ export default function LoginPage() {
                                 </button>
                             </div>
 
-                            <div className="mt-10 text-center">
+                            <div className="lg:mt-10 mt-5 text-center">
                                 <p className="text-on-surface-variant text-sm">
                                     New to the Dhuno?
                                     <Link

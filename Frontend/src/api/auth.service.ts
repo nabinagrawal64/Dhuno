@@ -5,11 +5,13 @@ export interface SignupData {
     username: string;
     email: string;
     password: string;
+    role?: "user" | "artist";
 }
 
 export interface LoginData {
     email: string;
     password: string;
+    role?: "user" | "artist" | "admin";
 }
 
 export interface GoogleAuthData {
@@ -17,6 +19,7 @@ export interface GoogleAuthData {
     fullName: string;
     avatar?: string;
     googleId: string;
+    role?: "user" | "artist";
 }
 
 export interface ForgotPasswordData {
@@ -32,6 +35,34 @@ export interface ResetPasswordData {
     email: string;
     code: string;
     newPassword: string;
+}
+
+export interface UserProfile {
+    _id: string;
+    fullName: string;
+    username: string;
+    email: string;
+    avatar: string;
+    bannerImage: string;
+    bio: string;
+    role: "user" | "artist" | "admin";
+    isVerified: boolean;
+    isArtistPro: boolean;
+    followers: string[];
+    following: string[];
+    playlists: string[];
+    uploadedClips: string[];
+    joinedRooms: string[];
+    twoFactorEnabled: boolean;
+    totalSongs?: number;
+}
+
+export interface UpdateProfileData {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatar?: string;
+    bannerImage?: string;
 }
 
 export const authService = {
@@ -75,5 +106,21 @@ export const authService = {
             method: "POST",
             body: JSON.stringify(data),
         });
+    },
+    getMe: async () => {
+        return apiClient("/auth/me", {
+            method: "GET",
+        }) as Promise<{ success: boolean; user: UserProfile }>;
+    },
+    updateMe: async (data: UpdateProfileData) => {
+        return apiClient("/auth/me", {
+            method: "PUT",
+            body: JSON.stringify(data),
+        }) as Promise<{ success: boolean; message: string; user: UserProfile }>;
+    },
+    deleteMe: async () => {
+        return apiClient("/auth/me", {
+            method: "DELETE",
+        }) as Promise<{ success: boolean; message: string }>;
     },
 };

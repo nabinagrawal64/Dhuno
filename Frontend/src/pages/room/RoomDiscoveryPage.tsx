@@ -1,6 +1,6 @@
 export default function RoomDiscoveryPage() {
     return (
-        <div className="bg-background text-on-surface font-body selection:bg-primary/30 min-h-screen overflow-hidden">
+        <div className="bg-background text-on-surface font-body selection:bg-primary/30 w-full">
             <style
                 dangerouslySetInnerHTML={{
                     __html: `.material-symbols-outlined {
@@ -18,34 +18,21 @@ export default function RoomDiscoveryPage() {
                     .hide-scrollbar {
                         -ms-overflow-style: none;
                         scrollbar-width: none;
-                    }
-                    body {
-                        min-height: max(884px, 100dvh);
                     }`,
                 }}
             />
 
-            <main className="pt-6 md:pt-12 lg:pt-20 pb-32 px-4 md:px-6 lg:px-8 h-screen overflow-y-auto hide-scrollbar">
+            <main className="pt-6 md:pt-12 lg:pt-20 pb-40 px-4 md:px-6 lg:px-8 w-full">
                 <section className="mb-10 flex flex-col gap-6">
-                    <div className="flex items-start gap-3 md:gap-4">
-                        <button
-                            className="lg:hidden p-1 -ml-2 text-slate-400 hover:text-white shrink-0"
-                            onClick={() =>
-                                document.dispatchEvent(
-                                    new CustomEvent("toggle-mobile-sidebar"),
-                                )
-                            }
-                        >
-                            <span className="material-symbols-outlined text-3xl">
-                                menu
-                            </span>
-                        </button>
-
-                        <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between lg:justify-start gap-3 md:gap-4 w-full">
+                        <div className="min-w-0 flex-1"> 
                             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-headline tracking-tighter text-on-surface">
                                 Rooms Discovery
                             </h1>
                         </div>
+                        <a href="/notifications" className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors bg-surface-container-high rounded-full w-10 h-10 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-2xl">notifications</span>
+                        </a>
                     </div>
 
                     <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">

@@ -3,6 +3,9 @@ import toast from "react-hot-toast";
 import { loggerUtils } from "./logger";
 
 const TOKEN_KEY = "auth_token";
+const ROLE_KEY = "auth_role";
+
+export type AuthRole = "user" | "artist" | "admin";
 
 // Decode JWT token to get expiration
 const decodeToken = (token: string) => {
@@ -47,6 +50,23 @@ export const authUtils = {
         localStorage.removeItem(TOKEN_KEY);
     },
 
+    saveRole: (role: AuthRole) => {
+        localStorage.setItem(ROLE_KEY, role);
+    },
+
+    getRole: (): AuthRole | null => {
+        const role = localStorage.getItem(ROLE_KEY);
+        return role === "user" || role === "artist" || role === "admin" ? role : null;
+    },
+
+    removeRole: () => {
+        localStorage.removeItem(ROLE_KEY);
+    },
+
+    getLandingPath: (role?: AuthRole | null) => {
+        return role === "artist" ? "/artist/dashboard" : "/home";
+    },
+
     isAuthenticated: () => {
         const token = authUtils.getToken();
         return !!token;
@@ -72,6 +92,7 @@ export const authUtils = {
         } finally {
             // Always clear token locally regardless of API result
             authUtils.removeToken();
+            authUtils.removeRole();
             loggerUtils.logAuthEvent("logout");
             toast.success("Logged out successfully");
             

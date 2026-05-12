@@ -1,6 +1,6 @@
-﻿export default function NotificationsPage() {
+export default function NotificationsPage() {
     return (
-        <div className="bg-surface-dim text-on-surface font-body min-h-screen overflow-x-hidden relative selection:bg-primary/30 selection:text-primary">
+        <div className="bg-surface-dim text-on-surface font-body relative selection:bg-primary/30 selection:text-primary w-full">
             <style
                 dangerouslySetInnerHTML={{
                     __html: `.material-symbols-outlined {
@@ -15,11 +15,7 @@
         }
         .coral-accent-glow {
             box-shadow: 0 0 15px rgba(255, 184, 187, 0.15);
-        }
-
-body {
-      min-height: max(884px, 100dvh);
-    }`,
+        }`,
                 }}
             />
             <div>
@@ -28,25 +24,10 @@ body {
                 <div className="fixed bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-tertiary-container/5 blur-[120px] pointer-events-none" />
 
                 {/* Main Content Area */}
-                <main className="pt-6 md:pt-12 lg:pt-20 px-4 md:px-6 lg:px-8 h-screen overflow-y-auto no-scrollbar">
+                <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full">
                     {/* Header Section */}
                     <section className="md:mb-5 mb-2">
-                        <div className="flex items-start gap-3 md:gap-4">
-                            <button
-                                className="lg:hidden p-1 -ml-2 text-slate-400 hover:text-white shrink-0"
-                                onClick={() =>
-                                    document.dispatchEvent(
-                                        new CustomEvent(
-                                            "toggle-mobile-sidebar",
-                                        ),
-                                    )
-                                }
-                            >
-                                <span className="material-symbols-outlined text-3xl">
-                                    menu
-                                </span>
-                            </button>
-
+                        <div className="flex items-start justify-between lg:justify-start gap-3 md:gap-4 w-full">
                             <div className="min-w-0 flex-1">
                                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-headline tracking-tighter">
                                     Notifications

@@ -2,7 +2,7 @@ import { Heart } from "lucide-react";
 
 export default function HomePage() {
     return (
-        <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen overflow-hidden">
+        <div className="bg-surface text-on-surface font-body selection:bg-primary/30 w-full">
             <style dangerouslySetInnerHTML={{
                 __html: `.material-symbols-outlined {
                         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -25,29 +25,19 @@ export default function HomePage() {
                     .glass-panel {
                         backdrop-filter: blur(16px);
                         background: rgba(28, 32, 39, 0.4);
-                    }
-                    body {
-                        background-color: #0f131b;
-                        font-family: 'Manrope', sans-serif;
-                        color: #dfe2ed;
-                    }
-
-            body {
-                min-height: max(884px, 100dvh);
-                }` }}
+                    }` }}
             />
             <div>
                 {/* Main Content Canvas */}
-                <main className="pt-6 md:pt-12 lg:pt-20 pb-32 px-4 md:px-6 lg:px-8 h-screen overflow-y-auto no-scrollbar">
+                <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full">
                     {/* Welcome Header */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6 relative">
                         <div>
-                            <div className="flex items-center gap-3 lg:gap-0 mb-4">
-                                {/* Mobile Hamburger Menu */}
-                                <button className="lg:hidden p-1 -ml-2 text-slate-400 hover:text-white" onClick={() => document.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}>
-                                    <span className="material-symbols-outlined text-3xl">menu</span>
-                                </button>
+                            <div className="flex items-center justify-between lg:justify-start gap-3 lg:gap-0 mb-4 w-full">
                                 <h1 className="lg:text-4xl sm:text-3xl text-2xl font-extrabold font-headline tracking-tighter">Good evening, Alex</h1>
+                                <a href="/notifications" className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors bg-surface-container-high rounded-full w-10 h-10 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-2xl">notifications</span>
+                                </a>
                             </div>
                             <div className="flex gap-3">
                                 <button className="px-5 py-1.5 rounded-full bg-surface-container-high text-sm font-semibold hover:bg-primary hover:text-on-primary transition-all duration-300">Calm</button>

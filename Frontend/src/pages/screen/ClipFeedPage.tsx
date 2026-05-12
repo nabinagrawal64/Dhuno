@@ -53,24 +53,15 @@ export default function ClipFeedPage() {
 
             <main className="pt-6 md:pt-12 lg:pt-20 pb-32 px-4 md:px-6 lg:px-8 h-screen overflow-y-auto no-scrollbar">
                 <section className="mb-5 md:mb-8 flex flex-col gap-4">
-                    <div className="flex items-center gap-3">
-                        <button
-                            className="lg:hidden p-1 -ml-2 text-slate-400 hover:text-white shrink-0"
-                            onClick={() =>
-                                document.dispatchEvent(
-                                    new CustomEvent("toggle-mobile-sidebar"),
-                                )
-                            }
-                        >
-                            <span className="material-symbols-outlined text-3xl">
-                                menu
-                            </span>
-                        </button>
+                    <div className="flex items-center justify-between lg:justify-start gap-3 w-full">
                         <div>
                             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-headline tracking-tighter text-glow">
                                 Sound Clips Discovery
                             </h1>
                         </div>
+                        <a href="/notifications" className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors bg-surface-container-high rounded-full w-10 h-10 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-2xl">notifications</span>
+                        </a>
                     </div>
                 </section>
 
@@ -82,14 +73,14 @@ export default function ClipFeedPage() {
                                 index % 2 === 1 ? "xl:mt-10" : ""
                             }`}
                         >
-                            <div className="aspect-[3/4] relative">
+                            <div className="aspect-3/4 relative">
                                 <img
                                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                     src={clip.image}
                                     alt={clip.title}
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-surface-dim via-transparent to-transparent opacity-80" />
-                                <div className="absolute bottom-24 left-6 right-6 flex items-end gap-[2px] h-12">
+                                <div className="absolute inset-0 bg-linear-to-t from-surface-dim via-transparent to-transparent opacity-80" />
+                                <div className="absolute bottom-24 left-6 right-6 flex items-end gap-0.5 h-12">
                                     <div className="waveform-bar h-[40%]" />
                                     <div className="waveform-bar h-[60%]" />
                                     <div className="waveform-bar h-[90%]" />
@@ -108,7 +99,7 @@ export default function ClipFeedPage() {
                                     </p>
                                 </div>
                                 <div className="absolute top-6 right-4 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <button className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:text-red-400">
+                                    <button aria-label="make fav" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:text-red-400">
                                         <Heart className="h-5 w-5" />
                                     </button>
                                     <button className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:text-primary">

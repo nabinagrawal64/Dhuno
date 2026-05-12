@@ -11,7 +11,6 @@ import RoomDiscoveryPage from './room/RoomDiscoveryPage';
 import CreateRoomPage from './room/CreateRoomPage';
 import LiveSessionPage from './room/LiveSessionPage';
 import NotificationsPage from './notifications/NotificationsPage';
-import SettingsPage from './settings/SettingsPage';
 
 export type DhunoPage = {
   title: string;
@@ -106,11 +105,4 @@ export const dhunoPages: DhunoPage[] = [
     source: "Page/Notification and settings/notification desktop.html",
     Component: NotificationsPage,
   },
-  {
-    title: "Settings",
-    category: "Settings",
-    path: "/settings",
-    source: "Page/Notification and settings/settings desktop.html",
-    Component: SettingsPage,
-  }
 ];

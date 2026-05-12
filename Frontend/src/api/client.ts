@@ -10,6 +10,7 @@ export const apiClient = async (
 ) => {
     const url = `${API_BASE_URL}${endpoint}`;
     const startTime = performance.now();
+    const isLoginEndpoint = endpoint === "/auth/login" || endpoint === "/auth/google";
     
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -44,8 +45,9 @@ export const apiClient = async (
     // Log API call
     loggerUtils.logApiCall(method, endpoint, response.status, duration);
 
-    // Handle 401 Unauthorized (token expired or invalid)
-    if (response.status === 401) {
+    // Handle 401 Unauthorized (token expired or invalid) for protected requests.
+    // Login endpoints use 401 for bad credentials, so preserve the API message there.
+    if (response.status === 401 && !isLoginEndpoint) {
         authUtils.removeToken();
         loggerUtils.error("Unauthorized - Token expired or invalid", undefined, {
             endpoint,
@@ -55,13 +57,13 @@ export const apiClient = async (
         throw new Error("Session expired. Please login again.");
     }
 
-    // Handle 403 Forbidden (CSRF token invalid)
+    // Handle 403 Forbidden. Preserve API messages such as role mismatch.
     if (response.status === 403) {
-        loggerUtils.warn("CSRF token validation failed", {
+        loggerUtils.warn("Forbidden API response", {
             endpoint,
             status: response.status,
         });
-        throw new Error("Security check failed. Please refresh and try again.");
+        throw new Error(data.message || "Security check failed. Please refresh and try again.");
     }
 
     if (!response.ok) {

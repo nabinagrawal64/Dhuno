@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Heart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Music2, LoaderCircle } from "lucide-react";
+import { songService, type SongItem } from "../../api/song.service";
+import { usePlayer } from "../../context/PlayerContext";
 
 const chips = ["All", "Songs", "Artists", "Rooms", "Clips", "Mood"];
 
@@ -9,8 +11,6 @@ const trends = [
     { num: "03", name: "Lofi Rain Forest", count: "900K searches" },
     { num: "04", name: "Stellar Drift", count: "540K searches" },
 ];
-
-const recentTags = ["Synthwave 1984", "After Hours", "Tokyo Drift", "Orbital"];
 
 const cards = [
     {
@@ -44,12 +44,67 @@ const cards = [
     },
 ];
 
+const initialRecentSearches = (): string[] => {
+    try {
+        const item = localStorage.getItem("dhuno_recent_searches");
+        return item ? JSON.parse(item) : ["Synthwave 1984", "After Hours"];
+    } catch {
+        return ["Synthwave 1984", "After Hours"];
+    }
+};
+
 export default function SearchPage() {
     const [activeChip, setActiveChip] = useState("All");
     const [playing, setPlaying] = useState(false);
 
+    const { playSong } = usePlayer();
+    const [query, setQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<SongItem[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    
+    const [recentSearches, setRecentSearches] = useState<string[]>(initialRecentSearches);
+
+    const addRecentSearch = (term: string) => {
+        if (!term.trim()) return;
+        setRecentSearches(prev => {
+            const updated = [term.trim(), ...prev.filter(t => t !== term.trim())].slice(0, 10);
+            localStorage.setItem("dhuno_recent_searches", JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const clearRecentSearches = () => {
+        setRecentSearches([]);
+        localStorage.removeItem("dhuno_recent_searches");
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            addRecentSearch(query);
+        }
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (!query.trim()) {
+                setSearchResults([]);
+                return;
+            }
+            try {
+                setIsSearching(true);
+                const res = await songService.searchSongs(query);
+                setSearchResults(res.songs || []);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [query]);
+
     return (
-        <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen overflow-hidden">
+        <div className="bg-surface text-on-surface font-body selection:bg-primary/30 w-full">
             <style
                 dangerouslySetInnerHTML={{
                     __html: `.material-symbols-outlined {
@@ -59,44 +114,37 @@ export default function SearchPage() {
                     .glass-panel {
                         background: rgba(28, 32, 39, 0.4);
                         backdrop-filter: blur(16px);
-                    }
-                    body {
-                        background-color: #0f131b;
-                        font-family: 'Manrope', sans-serif;
-                        color: #dfe2ed;
-                        min-height: max(884px, 100dvh);
                     }`,
                 }}
             />
 
-            <main className="pt-6 md:pt-12 lg:pt-20 pb-32 px-4 md:px-6 lg:px-8 h-screen overflow-y-auto no-scrollbar">
+            <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full">
                 {/* search */}
                 <section className="mb-5">
-                    <div className="flex items-center gap-3 md:gap-4">
-                        {/* menu */}
-                        <button
-                            className="lg:hidden p-1 -ml-2 text-slate-400 hover:text-white shrink-0"
-                            onClick={() =>
-                                document.dispatchEvent(
-                                    new CustomEvent("toggle-mobile-sidebar"),
-                                )
-                            }
-                        >
-                            <span className="material-symbols-outlined text-3xl">
-                                menu
-                            </span>
-                        </button>
-                        
+                    <div className="flex items-center gap-3 md:gap-4 w-full">
                         {/* serach and mic */}
                         <div className="relative flex-1 w-full group">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
                                 search
                             </span>
                             <input
-                                className="w-full rounded-full bg-surface-container-high border border-white/5 py-3.5 pl-12 pr-14 text-sm sm:text-base text-on-surface placeholder:text-slate-500 outline-none transition-all focus:border-primary/30 focus:ring-4 focus:ring-primary/10"
+                                className="w-full rounded-full bg-surface-container-high border border-white/5 py-3.5 pl-12 pr-24 text-sm sm:text-base text-on-surface placeholder:text-slate-500 outline-none transition-all focus:border-primary/30 focus:ring-4 focus:ring-primary/10"
                                 type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 placeholder="Artists, songs, podcasts, or live rooms..."
                             />
+                            {query.length > 0 && (
+                                <button 
+                                    onClick={() => setQuery("")}
+                                    className="absolute right-12 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full text-slate-400 hover:text-on-surface hover:bg-white/5 transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">
+                                        close
+                                    </span>
+                                </button>
+                            )}
                             <button className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full bg-surface-container text-primary hover:bg-primary/15 transition-colors">
                                 <span
                                     className="material-symbols-outlined"
@@ -109,8 +157,54 @@ export default function SearchPage() {
                     </div>
                 </section>
                 
-                {/* category list horizontally */}
-                <section className="mb-2.5 lg:mb-5">
+                {query.trim().length > 0 ? (
+                    <div className="mt-8">
+                        <h2 className="text-xl font-bold font-headline tracking-tight mb-5">Search Results</h2>
+                        {isSearching ? (
+                            <div className="flex justify-center p-12">
+                                <LoaderCircle className="w-8 h-8 animate-spin text-primary" />
+                            </div>
+                        ) : searchResults.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {searchResults.map((song) => (
+                                    <div 
+                                        key={song._id} 
+                                        onClick={() => {
+                                            playSong({ _id: song._id, title: song.title, audioUrl: song.audioUrl ?? '', coverImage: song.coverImage, artistName: song.artistName || song.artist?.name || song.artist?.username || 'Artist', duration: song.duration });
+                                            addRecentSearch(query);
+                                        }}
+                                        className="flex items-center gap-4 p-3 rounded-2xl border border-white/5 bg-surface-container-low hover:bg-surface-container-high cursor-pointer transition-all group"
+                                    >
+                                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 shrink-0 relative">
+                                            {song.coverImage ? (
+                                                <img src={song.coverImage} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary">
+                                                    <Music2 className="w-6 h-6" />
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: '"FILL" 1' }}>play_arrow</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-on-surface truncate group-hover:text-primary transition-colors">{song.title}</p>
+                                            <p className="text-xs text-slate-400 truncate">{song.artistName || song.artist?.name || song.artist?.username || 'Artist'}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="glass-panel rounded-3xl p-12 text-center">
+                                <span className="material-symbols-outlined text-4xl text-slate-500 mb-4">search_off</span>
+                                <p className="text-slate-400">No songs found for "{query}"</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        {/* category list horizontally */}
+                        <section className="mb-2.5 lg:mb-5">
                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                         {chips.map((chip) => (
                             <button
@@ -146,6 +240,10 @@ export default function SearchPage() {
                                 {trends.map((trend) => (
                                     <button
                                         key={trend.num}
+                                        onClick={() => {
+                                            setQuery(trend.name);
+                                            addRecentSearch(trend.name);
+                                        }}
                                         className="w-full rounded-2xl px-3 py-3 flex items-center gap-4 text-left hover:bg-white/5 transition-colors"
                                     >
                                         <span className="text-primary text-sm font-black w-8 shrink-0">
@@ -168,30 +266,36 @@ export default function SearchPage() {
                         </div>
                         
                         {/* Recent Searches */}
-                        <div className="glass-panel rounded-3xl p-5 md:p-6">
-                            <div className="flex items-center justify-between mb-5">
-                                <h2 className="text-xl font-bold font-headline tracking-tight">
-                                    Recent Searches
-                                </h2>
-                                <button className="text-[11px] uppercase tracking-[0.24em] text-primary font-bold hover:opacity-80 transition-opacity">
-                                    Clear
-                                </button>
-                            </div>
+                        {recentSearches.length > 0 && (
+                            <div className="glass-panel rounded-3xl p-5 md:p-6">
+                                <div className="flex items-center justify-between mb-5">
+                                    <h2 className="text-xl font-bold font-headline tracking-tight">
+                                        Recent Searches
+                                    </h2>
+                                    <button onClick={clearRecentSearches} className="text-[11px] uppercase tracking-[0.24em] text-primary font-bold hover:opacity-80 transition-opacity">
+                                        Clear
+                                    </button>
+                                </div>
 
-                            <div className="flex flex-wrap gap-3">
-                                {recentTags.map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-surface-container-high px-4 py-2 text-xs text-slate-300"
-                                    >
-                                        <span className="material-symbols-outlined text-base text-slate-500">
-                                            history
-                                        </span>
-                                        {tag}
-                                    </span>
-                                ))}
+                                <div className="flex flex-wrap gap-3">
+                                    {recentSearches.map((tag) => (
+                                        <button
+                                            key={tag}
+                                            onClick={() => {
+                                                setQuery(tag);
+                                                addRecentSearch(tag);
+                                            }}
+                                            className="inline-flex items-center gap-2 rounded-xl bg-surface-container-high px-4 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-base text-slate-500">
+                                                history
+                                            </span>
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                     
                     {/* recommended */}
@@ -296,7 +400,9 @@ export default function SearchPage() {
                             </div>
                         </div>
                     </div>
-                </section>
+                    </section>
+                    </>
+                )}
             </main>
         </div>
     );

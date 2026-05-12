@@ -21,12 +21,10 @@ function resolveRouteFromAnchor(anchor: HTMLAnchorElement) {
     if (combined.includes('library')) return '/library'
     if (combined.includes('profile') || combined.includes('person')) return '/profile'
     if (combined.includes('room') || combined.includes('groups')) return '/rooms/discovery'
-    if (combined.includes('clip') || combined.includes('movie_filter')) return '/clips'
     if (combined.includes('live') || combined.includes('session')) return '/rooms/live'
     if (combined.includes('create')) return '/rooms/create'
     if (combined.includes('player')) return '/player'
     if (combined.includes('notification') || combined.includes('notify')) return '/notifications'
-    if (combined.includes('setting') || combined.includes('gear')) return '/settings'
 
     return null
 }
@@ -40,10 +38,8 @@ function UnifiedSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: () =>
         { to: '/search', label: 'Search', icon: 'search' },
         { to: '/library', label: 'Library', icon: 'library_music' },
         { to: '/rooms/discovery', label: 'Rooms', icon: 'groups' },
-        { to: '/clips', label: 'Clips', icon: 'movie_filter' },
         { to: '/profile', label: 'Profile', icon: 'person' },
         { to: '/notifications', label: 'Notify', icon: 'notifications' },
-        { to: '/settings', label: 'Settings', icon: 'settings' },
     ]
 
     return (
@@ -123,15 +119,8 @@ export default function AppPage({ children }: { children: ReactNode }) {
     // Treat widths below 1024px (lg) as mobile to hide the sidebar on md screens
     const isMobile = useIsMobile(1024)
     const [sidebarOpen, setSidebarOpen] = useState(true)
-    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
     const desktopLeft = sidebarOpen ? '16rem' : '88px'
     const desktopWidth = sidebarOpen ? 'calc(100vw - 16rem)' : 'calc(100vw - 88px)'
-
-    useEffect(() => {
-        const toggleMobileSidebar = () => setMobileSidebarOpen(prev => !prev);
-        document.addEventListener('toggle-mobile-sidebar', toggleMobileSidebar);
-        return () => document.removeEventListener('toggle-mobile-sidebar', toggleMobileSidebar);
-    }, []);
 
     const routeClass =
         location.pathname === '/home'
@@ -140,15 +129,11 @@ export default function AppPage({ children }: { children: ReactNode }) {
                 ? 'route-search'
                 : location.pathname === '/library'
                     ? 'route-library'
-                    : location.pathname === '/clips'
-                        ? 'route-clips'
-                        : location.pathname === '/player'
+                    : location.pathname === '/player'
                             ? 'route-player'
                             : location.pathname === '/notifications'
                                 ? 'route-notifications'
-                                : location.pathname === '/settings'
-                                    ? 'route-settings'
-                                    : location.pathname.startsWith('/rooms')
+                                : location.pathname.startsWith('/rooms')
                                         ? 'route-rooms'
                                         : 'route-default'
 
@@ -254,23 +239,6 @@ export default function AppPage({ children }: { children: ReactNode }) {
         <div ref={rootRef} className="relative min-h-screen">
             {/* Desktop Sidebar */}
             {!isMobile ? <UnifiedSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} /> : null}
-            
-            {/* Mobile Drawer Sidebar */}
-            {isMobile && (
-                <>
-                    {/* Backdrop */}
-                    {mobileSidebarOpen && (
-                        <div 
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] transition-opacity"
-                            onClick={() => setMobileSidebarOpen(false)}
-                        />
-                    )}
-                    {/* Sidebar container */}
-                    <div className={`fixed inset-y-0 left-0 z-[90] transform transition-transform duration-300 ease-in-out ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                        <UnifiedSidebar isOpen={true} onToggle={() => setMobileSidebarOpen(false)} />
-                    </div>
-                </>
-            )}
 
             {!isMobile ? (
                 <>

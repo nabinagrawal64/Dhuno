@@ -92,6 +92,13 @@
 
 	* {
 		box-sizing: border-box;
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+
+	/* Hide scrollbar globally for Chrome, Safari and Opera */
+	::-webkit-scrollbar {
+		display: none;
 	}
 
 	/* Material Symbols icon font defaults */

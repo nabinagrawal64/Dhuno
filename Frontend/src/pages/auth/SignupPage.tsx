@@ -6,7 +6,6 @@ import { authUtils } from "../../utils/auth";
 import { rateLimitUtils } from "../../utils/rateLimit";
 import { validationUtils } from "../../utils/validation";
 import { loggerUtils } from "../../utils/logger";
-import { useGoogleLogin } from '@react-oauth/google';
 
 export default function SignupPage() {
     const navigate = useNavigate();
@@ -18,45 +17,10 @@ export default function SignupPage() {
         password: "",
         confirm: "",
     });
+    const [accountRole, setAccountRole] = useState<"user" | "artist">("user");
     const [acceptTerms, setAcceptTerms] = useState(false);
     
     const [isLoading, setIsLoading] = useState(false);
-
-    const handleGoogleLogin = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
-            try {
-                setIsLoading(true);
-                const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-                });
-                const userInfo = await userInfoResponse.json();
-                
-                const response = await authService.googleAuth({
-                    email: userInfo.email,
-                    fullName: userInfo.name,
-                    avatar: userInfo.picture,
-                    googleId: userInfo.sub,
-                });
-                
-                if (response.token) {
-                    authUtils.saveToken(response.token);
-                    loggerUtils.logAuthEvent("googleSignup", { email: userInfo.email });
-                }
-                
-                toast.success("Google signup successful!");
-                navigate("/home");
-            } catch (err: unknown) {
-                if (err instanceof Error) {
-                    toast.error(err.message || "Google signup failed");
-                } else {
-                    toast.error("An unknown error occurred during Google signup");
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        },
-        onError: () => toast.error('Google Signup Failed'),
-    });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -97,10 +61,18 @@ export default function SignupPage() {
                 username: formData.username,
                 email: formData.email,
                 password: formData.password,
+                role: accountRole,
             });
             
             // Save token to localStorage
             if (response.token) {
+                if (response.user?.role && response.user.role !== accountRole) {
+                    authUtils.removeToken();
+                    authUtils.removeRole();
+                    toast.error(`This account was created as a ${response.user.role}.`);
+                    return;
+                }
+                authUtils.saveRole(response.user?.role ?? accountRole);
                 authUtils.saveToken(response.token);
                 // Reset rate limit on successful signup
                 rateLimitUtils.reset("signup");
@@ -113,7 +85,7 @@ export default function SignupPage() {
             
             toast.success("Account created successfully!");
             // Redirect to home on success
-            navigate("/home"); 
+            navigate(authUtils.getLandingPath(authUtils.getRole() ?? accountRole)); 
         } catch (err: unknown) {
             if (err instanceof Error) {
                 loggerUtils.warn("Signup failed", { 
@@ -215,9 +187,9 @@ export default function SignupPage() {
                     </section>
                     
                     {/* Right */}
-                    <section className="w-full xl:w-5/12 lg:w-1/2 h-full min-h-[60vh] lg:h-screen lg:min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12 xl:p-20 relative bg-surface-dim overflow-y-visible lg:overflow-hidden">
+                    <section className="w-full xl:w-5/12 lg:w-1/2 h-full min-h-[60vh] lg:h-screen lg:min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12 xl:p-16 relative bg-surface-dim overflow-y-visible lg:overflow-hidden">
                         <div className="glass-panel w-full max-w-[90%] sm:max-w-md p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl glow-shadow border border-white/5 relative z-10 mx-auto">
-                            <div className="mb-8 pl-1 sm:mb-10 sm:pl-0">
+                            <div className="mb-3 pl-1 md:mb-5 sm:pl-0">
                                 <h1 className="font-headline text-2xl sm:text-3xl font-bold mb-2">
                                     Create Account
                                 </h1>
@@ -227,6 +199,24 @@ export default function SignupPage() {
                             </div>
 
                             <form className="space-y-4" onSubmit={handleSubmit}>
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-5 lg:gap-10">
+                                        {(["user", "artist"] as const).map((role) => (
+                                            <button
+                                                key={role}
+                                                type="button"
+                                                onClick={() => setAccountRole(role)}
+                                                className={`rounded-xl lg:p-2 lg:py-3 p-1 py-2 lg:text-sm text-xs font-semibold uppercase tracking-widest transition-all border ${accountRole === role
+                                                    ? "bg-primary text-on-primary border-primary shadow-[0_0_0_1px_rgba(90,255,225,0.4)]"
+                                                    : "bg-surface-container-low text-on-surface-variant border-white/5 hover:border-primary/40"
+                                                    }`}
+                                            >
+                                                {role}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-1">
                                     <label className="font-label text-[10px] uppercase tracking-widest text-secondary opacity-70 ml-1">
                                         Full Name
@@ -350,21 +340,7 @@ export default function SignupPage() {
                                 </span>
                             </div>
 
-                            {/* Social Logins */}
-                            <div className="flex gap-4">
-                                {/* google */}
-                                <button type="button" onClick={() => handleGoogleLogin()} className="w-full flex cursor-pointer items-center justify-center gap-3 bg-surface-container-high py-3 rounded-full hover:bg-surface-container-highest transition-colors border border-white/5">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" />
-                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" />
-                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="currentColor" />
-                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" />
-                                    </svg>
-                                    <span className="text-sm font-medium">Google</span>
-                                </button>
-                            </div>
-
-                            <div className="mt-10 text-center">
+                            <div className="lg:mt-10 mt-5 text-center">
                                 <p className="text-sm text-on-surface-variant font-body">
                                     Already have an account?
                                     <Link

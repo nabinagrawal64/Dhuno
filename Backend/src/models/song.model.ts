@@ -4,9 +4,12 @@ export interface ISong extends Document {
     title: string;
     artist: Types.ObjectId;
     featuringArtists: Types.ObjectId[];
-    album: string;
+    artistName: string;
+    tags: string[];
     coverImage: string;
     audioUrl: string;
+    audioPublicId: string;
+    coverPublicId: string;
     duration: number;
     genre: string[];
     mood: string[];
@@ -24,6 +27,7 @@ export interface ISong extends Document {
     waveformColor: string;
     releaseDate?: Date;
     createdAt: Date;
+    uploadedBy: Types.ObjectId;
     updatedAt: Date;
 }
 
@@ -49,19 +53,35 @@ const songSchema = new Schema<ISong>(
             },
         ],
 
-        album: {
+        artistName: {
             type: String,
             default: "",
         },
 
+        tags: [
+            {
+                type: String,
+            },
+        ],
+
         coverImage: {
             type: String,
-            required: true,
+            default: "",
+        },
+
+        coverPublicId: {
+            type: String,
+            default: "",
         },
 
         audioUrl: {
             type: String,
             required: true,
+        },
+
+        audioPublicId: {
+            type: String,
+            default: "",
         },
 
         duration: {
@@ -142,6 +162,11 @@ const songSchema = new Schema<ISong>(
         waveformColor: {
             type: String,
             default: "#5AFFF1",
+        },
+
+        uploadedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
         },
 
         releaseDate: {

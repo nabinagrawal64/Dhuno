@@ -5,6 +5,8 @@ import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { PlayerProvider } from './context/PlayerContext.tsx'
+import { SocketProvider } from './context/SocketContext.tsx'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
 
@@ -13,7 +15,11 @@ createRoot(document.getElementById('root')!).render(
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <ThemeProvider>
-          <App />
+          <SocketProvider>
+            <PlayerProvider>
+              <App />
+            </PlayerProvider>
+          </SocketProvider>
         </ThemeProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
