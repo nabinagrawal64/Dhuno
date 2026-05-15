@@ -1,5 +1,5 @@
 import express from "express";
-import { uploadSong, getMySongs, updateSong, searchSongs } from "../controllers/song.controller";
+import { uploadSong, getMySongs, updateSong, searchSongs, getTrendingSongs } from "../controllers/song.controller";
 import { protect } from "../middleware/auth.middleware";
 import upload from "../middleware/upload.middleware";
 
@@ -25,6 +25,7 @@ router.post(
 
 router.get("/search", protect, searchSongs);
 router.get("/mine", protect, getMySongs);
+router.get("/trending", protect, getTrendingSongs);
 router.patch("/:id", protect, updateSong);
 
 export default router;

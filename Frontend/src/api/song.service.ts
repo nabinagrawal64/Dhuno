@@ -35,6 +35,7 @@ export type SongUploadData = {
     isExplicit: boolean;
     audio: File;
     coverImage?: File | null;
+    playlistId?: string;
 };
 
 export const songService = {
@@ -52,6 +53,10 @@ export const songService = {
         formData.append('tags', data.tags);
         formData.append('isExplicit', String(data.isExplicit));
         formData.append('audio', data.audio);
+
+        if (data.playlistId) {
+            formData.append('playlistId', data.playlistId);
+        }
 
         if (data.coverImage) {
             formData.append('coverImage', data.coverImage);
@@ -89,6 +94,12 @@ export const songService = {
 
     searchSongs: async (query: string): Promise<{ success: boolean; songs: SongItem[] }> => {
         return apiClient(`/songs/search?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+        }) as Promise<{ success: boolean; songs: SongItem[] }>;
+    },
+
+    getTrendingSongs: async (): Promise<{ success: boolean; songs: SongItem[] }> => {
+        return apiClient('/songs/trending', {
             method: 'GET',
         }) as Promise<{ success: boolean; songs: SongItem[] }>;
     },

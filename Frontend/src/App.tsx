@@ -9,12 +9,16 @@ import LiveSessionPage from './pages/room/LiveSessionPage'
 import RoomDiscoveryPage from './pages/room/RoomDiscoveryPage'
 import FullPlayerPage from './pages/screen/FullPlayerPage'
 import LibraryPage from './pages/screen/LibraryPage'
+import LikedSongsPage from './pages/screen/LikedSongsPage'
 import ProfilePage from './pages/screen/ProfilePage'
 import SearchPage from './pages/screen/SearchPage'
+import RecentlyPlayedPage from './pages/screen/RecentlyPlayedPage'
+import PlaylistDetailsPage from './pages/screen/PlaylistDetailsPage'
 import ArtistDashboardPage from './pages/artist/ArtistDashboardPage'
 import ArtistSongsPage from './pages/artist/ArtistSongsPage'
 import ArtistClipsPage from './pages/artist/ArtistClipsPage'
 import ArtistAnalyticsPage from './pages/artist/ArtistAnalyticsPage'
+import ArtistPlaylistPage from './pages/artist/ArtistPlaylistPage'
 import AuthFlowPage from './components/AuthFlowPage'
 import AuthProtectedRoute from './components/AuthProtectedRoute'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -70,6 +74,9 @@ function App() {
                 <Route path="/home" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><HomePage /></AppPage></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><SearchPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><LibraryPage /></AppPage></ProtectedRoute>} />
+                <Route path="/library/liked" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><LikedSongsPage /></AppPage></ProtectedRoute>} />
+                <Route path="/library/recently-played" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><RecentlyPlayedPage /></AppPage></ProtectedRoute>} />
+                <Route path="/library/playlist/:id" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><PlaylistDetailsPage /></AppPage></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><ProfilePage /></AppPage></ProtectedRoute>} />
                 <Route path="/rooms/discovery" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><RoomDiscoveryPage /></AppPage></ProtectedRoute>} />
                 <Route path="/rooms/create" element={<ProtectedRoute allowedRoles={["user", "admin"]}><AppPage><CreateRoomPage /></AppPage></ProtectedRoute>} />
@@ -80,6 +87,7 @@ function App() {
                 <Route path="/artist" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><Navigate to="/artist/dashboard" replace /></ProtectedRoute>} />
                 <Route path="/artist/dashboard" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ArtistDashboardPage /></ArtistAppPage></ProtectedRoute>} />
                 <Route path="/artist/songs" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ArtistSongsPage /></ArtistAppPage></ProtectedRoute>} />
+                <Route path="/artist/playlist/:id" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ArtistPlaylistPage /></ArtistAppPage></ProtectedRoute>} />
                 <Route path="/artist/clips" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ArtistClipsPage /></ArtistAppPage></ProtectedRoute>} />
                 <Route path="/artist/analytics" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ArtistAnalyticsPage /></ArtistAppPage></ProtectedRoute>} />
                 <Route path="/artist/profile" element={<ProtectedRoute allowedRoles={["artist", "admin"]}><ArtistAppPage><ProfilePage /></ArtistAppPage></ProtectedRoute>} />

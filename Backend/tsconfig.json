@@ -1,4 +1,4 @@
-    {
+{
     "compilerOptions": {
         "target": "ES2020",
         "module": "NodeNext",
@@ -9,10 +9,7 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
 
-        "typeRoots": [
-        "./node_modules/@types",
-        "./src/types"
-        ]
+        "typeRoots": ["./node_modules/@types", "./src/types"]
     },
 
     "include": ["src"]

@@ -93,7 +93,6 @@
 	* {
 		box-sizing: border-box;
 		-ms-overflow-style: none; /* IE and Edge */
-		scrollbar-width: none; /* Firefox */
 	}
 
 	/* Hide scrollbar globally for Chrome, Safari and Opera */
@@ -103,7 +102,40 @@
 
 	/* Material Symbols icon font defaults */
 	.material-symbols-outlined {
+		font-family: 'Material Symbols Outlined';
+		font-style: normal;
+		font-weight: 400;
+		display: inline-block;
+		line-height: 1;
+		letter-spacing: normal;
+		text-transform: none;
+		white-space: nowrap;
+		word-wrap: normal;
+		direction: ltr;
+		-webkit-font-feature-settings: 'liga';
+		font-feature-settings: 'liga';
+		-webkit-font-smoothing: antialiased;
 		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+		/* Slightly larger default size for clearer icons */
+		font-size: 1.25rem;
+	}
+	.material-symbols-filled {
+		font-family: 'Material Symbols Outlined';
+		font-style: normal;
+		font-weight: 400;
+		display: inline-block;
+		line-height: 1;
+		letter-spacing: normal;
+		text-transform: none;
+		white-space: nowrap;
+		word-wrap: normal;
+		direction: ltr;
+		-webkit-font-feature-settings: 'liga';
+		font-feature-settings: 'liga';
+		-webkit-font-smoothing: antialiased;
+		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+		/* Filled icons (used for play/pause) a bit larger */
+		font-size: 1.25rem;
 	}
 }
 
@@ -116,9 +148,9 @@
 	}
 	/* Glassmorphism card â€” used across pages */
 	.glass-panel {
-		background: color-mix(in srgb, var(--color-surface-container) 40%, transparent);
-		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
+		backdrop-filter: blur(16px);
+		background: color-mix(in srgb, var(--color-surface-container) 40%, transparent);
 	}
 }
 
@@ -129,7 +161,6 @@
 	}
 	.no-scrollbar {
 		-ms-overflow-style: none;
-		scrollbar-width: none;
 	}
 
 	/* Neon glow helpers */

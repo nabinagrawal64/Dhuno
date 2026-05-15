@@ -1,6 +1,17 @@
-import { Heart } from "lucide-react";
+import { Heart, Play, LayoutGrid, List as ListIcon } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { usePlayer } from "../../context/PlayerContext";
+
+function formatSavedCount(count: number) {
+    return count === 1 ? "1 track saved" : `${count} tracks saved`;
+}
 
 export default function LibraryPage() {
+    const { likedSongs, recentSongs, playlists } = usePlayer();
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const navigate = useNavigate();
+
     return (
         <div className="bg-surface text-on-surface font-body selection:bg-primary/30 w-full">
             <style
@@ -17,6 +28,7 @@ export default function LibraryPage() {
             />
 
             <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full">
+                {/* ... existing header and quick access cards ... */}
                 <section className="md:mb-5 mb-2">
                     <div className="flex items-start justify-between lg:justify-start gap-3 md:gap-4 w-full">
                         <div className="min-w-0 flex-1">
@@ -24,8 +36,13 @@ export default function LibraryPage() {
                                 Library
                             </h1>
                         </div>
-                        <a href="/notifications" className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors bg-surface-container-high rounded-full w-10 h-10 flex items-center justify-center shrink-0">
-                            <span className="material-symbols-outlined text-2xl">notifications</span>
+                        <a
+                            href="/notifications"
+                            className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors bg-surface-container-high rounded-full w-10 h-10 flex items-center justify-center shrink-0"
+                        >
+                            <span className="material-symbols-outlined text-2xl">
+                                notifications
+                            </span>
                         </a>
                     </div>
                 </section>
@@ -42,171 +59,160 @@ export default function LibraryPage() {
                     </span>
                 </section>
 
-                <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-14">
-                    <div className="xl:col-span-4">
-                        <div className="rounded-3xl p-8 bg-linear-to-br from-[#ffb8bb]/20 via-[#0f131b] to-[#1c2027] relative overflow-hidden border border-white/5 min-h-[260px] flex flex-col justify-between">
-                            <div>
-                                <div className="w-14 h-14 rounded-full bg-linear-to-br from-tertiary-container to-secondary flex items-center justify-center mb-6 shadow-lg">
-                                    <Heart className="h-8 w-8 text-white" />
-                                </div>
-                                <h2 className="text-3xl font-bold font-headline mb-2">
-                                    Liked Songs
-                                </h2>
-                                <p className="text-slate-300 font-medium">
-                                    1,248 tracks saved
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2 text-primary font-bold">
-                                <span>Play Everything</span>
-                                <span className="material-symbols-outlined">
-                                    play_arrow
-                                </span>
-                            </div>
-                            <div className="absolute -right-10 -bottom-10 opacity-10 blur-2xl w-64 h-64 bg-tertiary-container rounded-full" />
-                        </div>
-                    </div>
-
-                    <div className="xl:col-span-4">
-                        <div className="glass-panel h-full rounded-3xl p-8 border border-dashed border-white/10 flex flex-col items-center justify-center text-center min-h-[260px] hover:bg-surface-container-high/60 transition-all">
-                            <div className="w-16 h-16 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center mb-4">
-                                <span className="material-symbols-outlined text-primary text-4xl">
-                                    add
-                                </span>
-                            </div>
-                            <h2 className="text-xl font-bold font-headline mb-1">
-                                Create Playlist
-                            </h2>
-                            <p className="text-sm text-slate-500">
-                                Organize your auditory journey
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="xl:col-span-4 space-y-4">
-                        <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-secondary/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-secondary">
-                                        download_for_offline
-                                    </span>
+                <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 xl:gap-6 mb-5 md:mb-10">
+                    <div className="h-25">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/library/liked")}
+                            className="glass-panel w-full h-full p-4 md:p-5 rounded-2xl md:rounded-3xl border border-white/5 flex items-center justify-between text-left hover:bg-surface-container-high/60 transition-all"
+                        >
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl bg-tertiary-container/30 flex items-center justify-center shrink-0">
+                                    <Heart
+                                        className="h-4 w-4 md:h-5 md:w-5 text-tertiary-container"
+                                        fill="currentColor"
+                                    />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold">Downloads</h3>
-                                    <p className="text-xs text-slate-500">
-                                        42 albums • 12GB
-                                    </p>
+                                    <h3 className="font-bold text-sm md:text-base leading-tight">Liked Songs</h3>
+                                    <p className="text-[10px] md:text-xs text-slate-500">{formatSavedCount(likedSongs.length)}</p>
                                 </div>
                             </div>
-                            <span className="material-symbols-outlined text-slate-500">
-                                chevron_right
-                            </span>
-                        </div>
-
-                        <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-primary">
-                                        history
-                                    </span>
+                            <div className="flex items-center gap-2 text-[10px] md:text-xs text-primary font-bold">
+                                <span>Open</span>
+                                <Play className="h-3 w-3 fill-current" />
+                            </div>
+                        </button>
+                    </div>
+                    {/* ... (Downloads and Recently Played cards - omitting for brevity as they remain same) ... */}
+                    <div className="h-25">
+                        <div className="glass-panel h-full rounded-2xl md:rounded-3xl p-4 md:p-5 border border-white/5 flex items-center justify-between gap-3 md:gap-4">
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl bg-secondary/20 flex items-center justify-center shrink-0">
+                                    <span className="material-symbols-outlined text-secondary text-lg">download_for_offline</span>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold">Recently Played</h3>
-                                    <p className="text-xs text-slate-500">
-                                        Last played 2m ago
-                                    </p>
+                                    <h3 className="font-bold text-sm md:text-base leading-tight">Downloads</h3>
+                                    <p className="text-[10px] md:text-xs text-slate-500">42 albums • 12GB</p>
                                 </div>
                             </div>
-                            <span className="material-symbols-outlined text-slate-500">
-                                chevron_right
-                            </span>
+                            <span className="material-symbols-outlined text-slate-500 text-base">chevron_right</span>
                         </div>
+                    </div>
+                    <div className="h-25">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/library/recently-played")}
+                            className="glass-panel w-full h-full p-4 md:p-5 rounded-2xl md:rounded-3xl border border-white/5 flex items-center justify-between text-left hover:bg-surface-container-high/60 transition-all"
+                        >
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0">
+                                    <span className="material-symbols-outlined text-primary text-lg">history</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-sm md:text-base leading-tight">Recently Played</h3>
+                                    <p className="text-[10px] md:text-xs text-slate-500">{recentSongs.length > 0 ? `${recentSongs.length} tracks` : "No history"}</p>
+                                </div>
+                            </div>
+                            <span className="material-symbols-outlined text-slate-500 text-base">chevron_right</span>
+                        </button>
                     </div>
                 </section>
-
+                
+                {/* your playlists */}
                 <section>
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-2xl font-bold font-headline tracking-tight">
                             Your Playlists
                         </h2>
-                        <div className="flex gap-2">
-                            <button className="p-2 rounded-lg bg-surface-container-high text-on-surface">
-                                <span className="material-symbols-outlined text-sm">
-                                    grid_view
-                                </span>
+                        <div className="flex items-center gap-1 bg-surface-container-low p-1.5 rounded-2xl border border-white/5">
+                            <button 
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                <LayoutGrid size={18} />
                             </button>
-                            <button className="p-2 rounded-lg text-slate-500 hover:bg-surface-container-high transition-colors">
-                                <span className="material-symbols-outlined text-sm">
-                                    format_list_bulleted
-                                </span>
+                            <button 
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                <ListIcon size={18} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
-                        {[
-                            {
-                                title: "Midnight Cyberpunk",
-                                meta: "142 tracks",
-                                updated: "Updated 2h ago",
-                                image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAu8lvQVyp6jbZMWRrKn6xWgOXVIecWPWLarzZHQ2vV08ODDDJuOGTxO8X_7HTwuy1zhWYBgHEh24pgMFhXY97BvsM2pWzXlPST-vqPaMElmK3dL6R-kumtd3cQEpX34ONUjW2avLGbzqPia46V_i4BdBm-7r_40CZk-FFgWLg8BFNwXyiz63qLsuwSutfEv5QhDuMoK3maNbvyJHK_pLH9adbvZZc1LqViOASWtXLL8INdtHXJyL34WmP2YSqowwm6BQQhP2ZHEgg",
-                            },
-                            {
-                                title: "Ethereal Focus",
-                                meta: "85 tracks",
-                                updated: "Updated 1d ago",
-                                image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCXTDuEZTLaVcH-hnasinvt0laiH-VVeeo1lBlLXns93A2Nhy83upfT51IQS8b0YLXUryFZZnvqeur7QZNz8CSGLRT465-57qnFbowz5YvO4ntj1vccJcAYMaHAwgu04n2K6S9rbhG3RWNYllaMOt4AsEhH7hRb94BRbMJgcbWW2n1LQWs901630SL6nVo-GXzE40nQRmLanTvn5DHBIrp4mZsZ8C8vhchA7hBU_L-HfXsLb_sK_kWcLrZQpKY2ngNpMI-Uj4QOzLU",
-                            },
-                            {
-                                title: "Heavy Bass Theory",
-                                meta: "210 tracks",
-                                updated: "Updated 4d ago",
-                                image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiq-YTxCTVB1BSfm8xmdsZg58XYCxZMD23Kgo1CBXm_bqrnSWmOKKVuMeHLEMzGSAzr7h1SlAUopVk29UBAXtE2pdnKbvLaPK-_le9XGI9XmLYSSrZiYYJjbAQ-S2ul3hRcTXJg1CYBTMZK206w3kmjlTkeFOJ1dJXarg19XWpqJ3XiXL5ekiWz5P0m9dBL5RFmQtH_Ao4RYpTW3mjyHONl95hGd6AMzpOmxdaLWz26nDSK7x_ayHXqhdlzPuhFXa4QCfRmfKBeNY",
-                            },
-                            {
-                                title: "Summer Rewind '23",
-                                meta: "350 tracks",
-                                updated: "Updated 1w ago",
-                                image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBS5ESHrusOd-UzFI_toM7sWxjkVW-jqr3jLOwbd4uc_-ltOrg-Qy8HPz-rdaEoOZa88DOgINsPrOLGVcBWjy74PSMrXv1ajHS9C-VkEFJSYIYZMP13eP-hTfP2qS276hoH6IXXfDQcqaLvVDLW0S5H5bXpCOOEmFkCAuTLxRFQOXXV9gV_y6NvV0qkFwcGuAUOibW77Au34qFL8pm4EPYRqFXc0HKKQELzzRLlUSEGPI4Ir_2fynn2kL9GJ4WnOIK0ckUD6RY6UhY",
-                            },
-                            {
-                                title: "Golden Era Jazz",
-                                meta: "64 tracks",
-                                updated: "Updated 2w ago",
-                                image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAqPFNkVz5KYuDFwOXohvmZlpMsJMUjAyH1B1BaImjqR_WJZFKHp4lr1BHFIb1cvO-2za_59qJjXh_IP9ZIFJqgUGNs5Hye5i0UV-umoa_1Zf0_B_c8-NLncoeiCH1vbfvQLDZEzg7gANbgSucEb5gMq57VzBtpkyvlqHkXkkUpkny0swE7MeejuP4pmhcljVCS67KEvU5GF6DwytQXt2R9wUhCpMTHoXeUjkZwG6EPfYipiScl5Ja_BvsXxf4CjJm9A8pa-iu-pCE",
-                            },
-                        ].map((playlist) => (
-                            <div key={playlist.title} className="group cursor-pointer">
-                                <div className="aspect-square rounded-2xl overflow-hidden mb-4 relative shadow-2xl">
-                                    <img
-                                        alt={playlist.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        src={playlist.image}
-                                    />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <div className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center scale-75 group-hover:scale-100 transition-transform">
-                                            <span
-                                                className="material-symbols-outlined"
-                                                style={{ fontVariationSettings: '"FILL" 1' }}
-                                            >
-                                                play_arrow
-                                            </span>
+                    {playlists.length === 0 ? (
+                        <div className="col-span-full rounded-[2.5rem] border border-dashed border-white/10 bg-surface-container-high/20 p-12 text-center text-slate-500">
+                            No playlists yet.
+                        </div>
+                    ) : viewMode === 'grid' ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6 md:gap-8">
+                            {playlists.map((playlist) => {
+                                const coverLabel = playlist.name.split(" ").filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join("") || "PL";
+                                return (
+                                    <div
+                                        key={playlist.id}
+                                        onClick={() => navigate(`/library/playlist/${playlist.id}`)}
+                                        className="group cursor-pointer flex flex-col"
+                                    >
+                                        <div className="aspect-square rounded-[2.5rem] overflow-hidden mb-5 relative shadow-2xl border border-white/5 bg-surface-container-high transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
+                                            {playlist.songs.length > 0 && playlist.songs[0].coverImage ? (
+                                                <img alt={playlist.name} className="w-full h-full object-cover" src={playlist.songs[0].coverImage} />
+                                            ) : (
+                                                <div className="w-full h-full bg-linear-to-br from-primary/30 to-secondary/30 flex items-center justify-center text-4xl font-black text-white/50">{coverLabel}</div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                                <div className="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-500 shadow-xl shadow-primary/20">
+                                                    <Play fill="currentColor" size={24} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="px-1">
+                                            <h3 className="font-bold text-base truncate group-hover:text-primary transition-colors">{playlist.name}</h3>
+                                            <p className="text-xs text-slate-500 font-medium mt-1">{playlist.songs.length} Tracks • {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(playlist.updatedAt))}</p>
                                         </div>
                                     </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {playlists.map((playlist) => (
+                                <div
+                                    key={playlist.id}
+                                    onClick={() => navigate(`/library/playlist/${playlist.id}`)}
+                                    className="group cursor-pointer flex items-center gap-5 p-4 rounded-3xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all"
+                                >
+                                    <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg border border-white/5 shrink-0 bg-surface-container-high relative">
+                                        {playlist.songs.length > 0 && playlist.songs[0].coverImage ? (
+                                            <img alt={playlist.name} className="w-full h-full object-cover" src={playlist.songs[0].coverImage} />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary/10 to-secondary/10 text-xl font-bold text-white/20">PL</div>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Play fill="currentColor" size={16} className="text-primary" />
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">{playlist.name}</h3>
+                                        <p className="text-sm text-slate-500 truncate mt-0.5">
+                                            {playlist.songs.length} Tracks • Last updated {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(playlist.updatedAt))}
+                                        </p>
+                                    </div>
+                                    <div className="hidden md:flex flex-col items-end text-right shrink-0">
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Visibility</span>
+                                        <span className="text-sm text-slate-400 font-medium mt-1">Private</span>
+                                    </div>
+                                    <div className="p-3 rounded-full hover:bg-white/5 text-slate-600 group-hover:text-primary transition-colors">
+                                        <span className="material-symbols-outlined">chevron_right</span>
+                                    </div>
                                 </div>
-                                <h3 className="font-bold truncate">{playlist.title}</h3>
-                                <div className="flex items-center justify-between mt-1 gap-3">
-                                    <span className="text-xs text-slate-500">
-                                        {playlist.meta}
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-tight text-slate-600">
-                                        {playlist.updated}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
             </main>
         </div>
     );
 }
+

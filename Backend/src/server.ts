@@ -8,6 +8,7 @@ import { initializeSocket } from "./sockets/socket";
 
 import connectDB from "./config/db";
 import authRoutes from "./routes/auth.routes";
+import playlistRoutes from "./routes/playlist.routes";
 import songRoutes from "./routes/song.routes";
 
 dotenv.config();
@@ -34,6 +35,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
+app.use("/api/playlists", playlistRoutes);
 app.use("/api/songs", songRoutes);
 
 app.get("/", (req: Request, res: Response) => {

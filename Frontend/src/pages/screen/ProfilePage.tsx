@@ -4,24 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { authService, type UpdateProfileData, type UserProfile } from '../../api/auth.service';
 import { authUtils } from '../../utils/auth';
 
-const playlists = [
-    {
-        title: 'Midnight Drive',
-        meta: '24 tracks • 1h 45m',
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxNCu7UKs9Zv0sni3A6R1AQiBVZsOSzMHgjBxF_oUrIw7IgbIycMGmp_fimUP1EEmmHZaIi030Y0lV68A0wizI2vD3DYhoPXUVV5l8jpb9i6bNJMNs6Z7NOwkbOD_z4IhxiKyK8ajmq7ijKXQOLhQrlOpncG1v9YLksrr2B-_bDFZESOMMOkbNZWc4jy2Osz_wEs3sooZFbY4-oen2R2fmL_A7xHt5DLr48dp3pvTHUMqsJSgdwWEuRrX7MQM7zK9NeCwU7jzXDOA',
-    },
-    {
-        title: 'Cyberpunk Soul',
-        meta: '18 tracks • 1h 12m',
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAq1Rr-B68cpX_dj5CAkooPG9FYtK_0D8Bjd2fNV2Q1ZDOfbxNfNpT6z28tD1BfvTnIcxjmuO6QR8BNGsJZTvqqJg-8C7o5lKZtESgcQ-2PpHa2cgxyyRvlT74kyc0QN3Fus-4bSA637O20wBRUZYCCJOe0nHR0c6r846IsxBNX094-WFlEfGAXDf7OQvACWxpvODv9OP78O_OgNM-5WKWOiEpqp3MzCvvOy3veo1wozY6jL4S3nkQ-kd-g_O3VaLARoq04r9GMRHU',
-    },
-    {
-        title: 'Neon Afterglow',
-        meta: '31 tracks • 2h 08m',
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAu8lvQVyp6jbZMWRrKn6xWgOXVIecWPWLarzZHQ2vV08ODDDJuOGTxO8X_7HTwuy1zhWYBgHEh24pgMFhXY97BvsM2pWzXlPST-vqPaMElmK3dL6R-kumtd3cQEpX34ONUjW2avLGbzqPia46V_i4BdBm-7r_40CZk-FFgWLg8BFNwXyiz63qLsuwSutfEv5QhDuMoK3maNbvyJHK_pLH9adbvZZc1LqViOASWtXLL8INdtHXJyL34WmP2YSqowwm6BQQhP2ZHEgg',
-    },
-];
-
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1600&q=80';
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=800&q=80';
 
@@ -351,37 +333,10 @@ export default function ProfilePage() {
 
                 <section className="grid grid-cols-1 gap-8">
                     <div className="lg:space-y-8 space-y-4 min-w-0">
+                        {/* Settings */}
                         <div className="glass-card rounded-[1.75rem] border border-white/5 p-5 sm:p-6 lg:p-7">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                                <h3 className="text-xl sm:text-2xl font-bold font-headline tracking-tight">Public Playlists</h3>
-                                <button className="text-primary text-sm font-bold hover:underline self-start sm:self-auto">View All</button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                {playlists.map((playlist) => (
-                                    <div
-                                        key={playlist.title}
-                                        className="group rounded-3xl bg-black/15 border border-white/5 p-4 hover:bg-white/4 transition-all duration-300"
-                                    >
-                                        <div className="relative overflow-hidden rounded-2xl mb-4 aspect-square">
-                                            <img
-                                                alt={playlist.title}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                src={playlist.image}
-                                            />
-                                        </div>
-                                        <h4 className="font-headline font-bold text-lg mb-1 truncate group-hover:text-primary transition-colors">
-                                            {playlist.title}
-                                        </h4>
-                                        <p className="text-xs text-slate-500 font-medium">{playlist.meta}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="glass-card rounded-[1.75rem] border border-white/5 p-5 sm:p-6 lg:p-7">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                                <h3 className="text-xl sm:text-2xl font-bold font-headline tracking-tight">Security</h3>
+                                <h3 className="text-xl sm:text-2xl font-bold font-headline tracking-tight">Settings</h3>
                                 <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">Protected</span>
                             </div>
 
@@ -423,7 +378,8 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         </div>
-
+                        
+                        {/* danger zone */}
                         <div className="glass-card rounded-[1.75rem] border border-[#ffb8bb]/20 p-5 sm:p-6 lg:p-7">
                             <h3 className="text-xl sm:text-2xl font-bold font-headline tracking-tight text-[#ffb8bb]">Danger Zone</h3>
                             <p className="mt-2 text-sm text-slate-400">

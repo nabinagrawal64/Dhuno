@@ -18,6 +18,8 @@ export interface IPlaylist extends Document {
     likes: Types.ObjectId[];
     saves: number;
     tags: string[];
+    genre: string;
+    language: string;
     isPinned: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -99,6 +101,14 @@ const playlistSchema = new Schema<IPlaylist>(
                 type: String,
             },
         ],
+        genre: {
+            type: String,
+            default: "",
+        },
+        language: {
+            type: String,
+            default: "",
+        },
 
         isPinned: {
             type: Boolean,

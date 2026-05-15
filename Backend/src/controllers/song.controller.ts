@@ -8,6 +8,7 @@ import { AuthRequest } from "../types/request.types";
 import { Types } from "mongoose";
 import User from "../models/user.model";
 import Artist from "../models/artist.model";
+import Playlist from "../models/playlist.model";
 
 // HELPER: UPLOAD TO CLOUDINARY
 const uploadToCloudinary = (
@@ -15,26 +16,20 @@ const uploadToCloudinary = (
     folder: string,
     resourceType: "image" | "video"
 ): Promise<any> => {
-
     return new Promise((resolve, reject) => {
-
         const stream = cloudinary.uploader.upload_stream(
             {
                 folder,
                 resource_type: resourceType,
             },
-
             (error, result) => {
-
                 if (error) {
                     reject(error);
                     return;
                 }
-
                 resolve(result);
             }
         );
-
         Readable.from(buffer).pipe(stream);
     });
 };
@@ -44,10 +39,7 @@ export const uploadSong = async (
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
-
     try {
-
-        // FILES
         const files = req.files as {
             [fieldname: string]: Express.Multer.File[];
         };
@@ -55,7 +47,6 @@ export const uploadSong = async (
         const audioFile = files?.audio?.[0];
         const coverImage = files?.coverImage?.[0];
 
-        // VALIDATION
         if (!audioFile) {
             res.status(400).json({
                 success: false,
@@ -64,7 +55,6 @@ export const uploadSong = async (
             return;
         }
 
-        // BODY
         const {
             title,
             artist,
@@ -74,23 +64,18 @@ export const uploadSong = async (
             lyrics,
             tags,
             isExplicit,
+            playlistId,
         } = req.body;
 
         const currentUserId = req.user?.toString();
         if (!currentUserId) {
-            res.status(401).json({
-                success: false,
-                message: "Not authorized",
-            });
+            res.status(401).json({ success: false, message: "Not authorized" });
             return;
         }
 
         const currentUser = await User.findById(currentUserId);
         if (!currentUser || !["artist", "admin"].includes(currentUser.role)) {
-            res.status(403).json({
-                success: false,
-                message: "Only artist accounts can upload songs",
-            });
+            res.status(403).json({ success: false, message: "Only artist accounts can upload songs" });
             return;
         }
 
@@ -105,123 +90,57 @@ export const uploadSong = async (
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        // ==============================
-        // EXTRACT AUDIO METADATA
-        // ==============================
+        const metadata = await parseBuffer(audioFile.buffer, audioFile.mimetype);
+        const duration = metadata.format.duration || 0;
 
-        const metadata = await parseBuffer(
-            audioFile.buffer,
-            audioFile.mimetype
-        );
-
-        const duration =
-            metadata.format.duration || 0;
-
-        // ==============================
-        // UPLOAD AUDIO
-        // ==============================
-
-        const uploadedAudio =
-            await uploadToCloudinary(
-                audioFile.buffer,
-                "dhuno/songs",
-                "video"
-            );
-
-        // ==============================
-        // UPLOAD COVER
-        // ==============================
+        const uploadedAudio = await uploadToCloudinary(audioFile.buffer, "dhuno/songs", "video");
 
         let uploadedCover = null;
-
         if (coverImage) {
-
-            uploadedCover =
-                await uploadToCloudinary(
-                    coverImage.buffer,
-                    "dhuno/covers",
-                    "image"
-                );
+            uploadedCover = await uploadToCloudinary(coverImage.buffer, "dhuno/covers", "image");
         }
 
-        // ==============================
-        // CREATE SONG
-        // ==============================
-
         const song = await Song.create({
-
             title,
-
             artist: artist || artistProfile._id,
-
             artistName,
-
             genre,
-
             language,
-
             lyrics,
-
-            isExplicit:
-                isExplicit === "true",
-
-            tags:
-                tags
-                    ?.split(",")
-                    .map((tag: string) =>
-                        tag.trim()
-                    ) || [],
-
+            isExplicit: isExplicit === "true",
+            tags: tags?.split(",").map((tag: string) => tag.trim()) || [],
             duration: Math.floor(duration),
-
-            audioUrl:
-                uploadedAudio.secure_url,
-
-            audioPublicId:
-                uploadedAudio.public_id,
-
-            coverImage:
-                uploadedCover?.secure_url || "",
-
-            coverPublicId:
-                uploadedCover?.public_id || "",
-
-            uploadedBy:
-                new Types.ObjectId(currentUserId),
-
+            audioUrl: uploadedAudio.secure_url,
+            audioPublicId: uploadedAudio.public_id,
+            coverImage: uploadedCover?.secure_url || "",
+            coverPublicId: uploadedCover?.public_id || "",
+            uploadedBy: new Types.ObjectId(currentUserId),
             source: "custom" as const,
-
             plays: 0,
-
             likes: [],
         });
 
-        // ==============================
-        // RESPONSE & SOCKET EMIT
-        // ==============================
+        // Add to playlist if provided
+        if (playlistId) {
+            const playlist = await Playlist.findById(playlistId);
+            if (playlist) {
+                playlist.songs.push(String(song._id));
+                playlist.totalTracks = playlist.songs.length;
+                playlist.totalDuration = (playlist.totalDuration || 0) + song.duration;
+                await playlist.save();
+            }
+        }
+
         (req as any).io.emit("new_song", song);
 
         res.status(201).json({
             success: true,
-
-            message:
-                "Song uploaded successfully",
-
+            message: "Song uploaded successfully",
             song,
         });
-
     } catch (error) {
-
-        console.error(
-            "SONG UPLOAD ERROR:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to upload song",
-        });
+        console.error("SONG UPLOAD ERROR:", error);
+        res.status(500).json({ success: false, message: "Failed to upload song" });
     }
 };
 
@@ -357,6 +276,29 @@ export const searchSongs = async (
         res.status(500).json({
             success: false,
             message: "Failed to search songs",
+        });
+    }
+};
+
+export const getTrendingSongs = async (
+    _req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const songs = await Song.find({})
+            .sort({ plays: -1 })
+            .limit(10)
+            .populate("artist", "fullName username avatar verified");
+
+        res.status(200).json({
+            success: true,
+            songs,
+        });
+    } catch (error) {
+        console.error("Error fetching trending songs:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch trending songs",
         });
     }
 };
