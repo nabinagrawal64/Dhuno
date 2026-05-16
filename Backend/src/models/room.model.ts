@@ -30,6 +30,7 @@ export interface IRoom extends Document {
         artist: string;
         artwork: string;
         audioUrl: string;
+        lyrics: string;
     };
 
     queue: {
@@ -37,6 +38,8 @@ export interface IRoom extends Document {
         title: string;
         artist: string;
         artwork: string;
+        audioUrl: string;
+        lyrics: string;
         addedBy: Types.ObjectId;
     }[];
 
@@ -58,6 +61,8 @@ export interface IRoom extends Document {
     allowChat: boolean;
     allowQueueAdd: boolean;
     allowGuests: boolean;
+    djMode: boolean;
+    currentDJ: Types.ObjectId;
 
     // ROOM ACTIVITY
     likes: Types.ObjectId[];
@@ -72,6 +77,12 @@ export interface IRoom extends Document {
         sender: Types.ObjectId;
         text: string;
         createdAt: Date;
+    }[];
+
+    // VOTING
+    skipVotes: {
+        voter: Types.ObjectId;
+        timestamp: Date;
     }[];
 
     createdAt: Date;
@@ -171,6 +182,11 @@ const roomSchema = new Schema<IRoom>(
                 type: String,
                 default: "",
             },
+
+            lyrics: {
+                type: String,
+                default: "",
+            },
         },
 
         queue: [
@@ -182,6 +198,16 @@ const roomSchema = new Schema<IRoom>(
                 artist: String,
 
                 artwork: String,
+
+                audioUrl: {
+                    type: String,
+                    default: "",
+                },
+
+                lyrics: {
+                    type: String,
+                    default: "",
+                },
 
                 addedBy: {
                     type: Schema.Types.ObjectId,
@@ -252,6 +278,16 @@ const roomSchema = new Schema<IRoom>(
             default: true,
         },
 
+        djMode: {
+            type: Boolean,
+            default: false,
+        },
+
+        currentDJ: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+        },
+
         // ACTIVITY
         likes: [
             {
@@ -291,6 +327,21 @@ const roomSchema = new Schema<IRoom>(
                 },
 
                 createdAt: {
+                    type: Date,
+                    default: Date.now,
+                },
+            },
+        ],
+
+        // VOTING
+        skipVotes: [
+            {
+                voter: {
+                    type: Schema.Types.ObjectId,
+                    ref: "User",
+                },
+
+                timestamp: {
                     type: Date,
                     default: Date.now,
                 },

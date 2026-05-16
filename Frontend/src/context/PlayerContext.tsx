@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useRef, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { playlistService, type PlaylistItem } from '../api/playlist.service';
 
 export interface PlayerSong {
@@ -36,17 +36,22 @@ interface PlayerContextType {
     recentSongs: PlayerSong[];
     playlists: PlayerPlaylist[];
     isCurrentSongLiked: boolean;
-    playSong: (song: PlayerSong) => void;
+    playSong: (song: PlayerSong, startTime?: number) => void;
     togglePlay: () => void;
     seek: (time: number) => void;
     setVolume: (vol: number) => void;
     skipNext: () => void;
     skipPrev: () => void;
+    play: () => void;
+    pause: () => void;
     toggleLikeCurrentSong: () => void;
     createPlaylistWithCurrentSong: (name: string) => Promise<void>;
     addCurrentSongToPlaylist: (playlistId: string) => Promise<void>;
     queue: PlayerSong[];
     setQueue: (songs: PlayerSong[]) => void;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    isRemoteControlled: boolean;
+    setIsRemoteControlled: (val: boolean) => void;
 }
 
 interface StoredPlayerState {
@@ -195,6 +200,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const [likedSongs, setLikedSongs] = useState<PlayerSong[]>(() => readStoredSongs(LIKED_SONGS_STORAGE_KEY));
     const [recentSongs, setRecentSongs] = useState<PlayerSong[]>(() => readStoredSongs(RECENT_SONGS_STORAGE_KEY));
     const [playlists, setPlaylists] = useState<PlayerPlaylist[]>(() => readStoredPlaylists());
+    const [isRemoteControlled, setIsRemoteControlled] = useState(false);
 
     const isCurrentSongLiked = currentSong ? likedSongs.some(song => song._id === currentSong._id) : false;
 
@@ -282,14 +288,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setRecentSongs(prev => [song, ...prev.filter(item => item._id !== song._id)].slice(0, 12));
     }, []);
 
-    const playSong = useCallback((song: PlayerSong) => {
+    const playSong = useCallback((song: PlayerSong, startTime: number = 0) => {
         const audio = audioRef.current;
         if (!audio) return;
         audio.src = song.audioUrl;
         audio.load();
+        
+        if (startTime > 0) {
+            const onCanPlay = () => {
+                audio.currentTime = startTime;
+                audio.removeEventListener('canplay', onCanPlay);
+            };
+            audio.addEventListener('canplay', onCanPlay);
+        }
+
         audio.play().catch(console.error);
         setCurrentSong(song);
-        setCurrentTime(0);
+        setCurrentTime(startTime);
         addToRecentSongs(song);
     }, [addToRecentSongs]);
 
@@ -302,6 +317,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             audio.pause();
         }
     }, [currentSong]);
+
+    const play = useCallback(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        audio.play().catch(console.error);
+    }, []);
+
+    const pause = useCallback(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        audio.pause();
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -382,13 +409,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         await refreshPlaylists();
     }, [currentSong, refreshPlaylists]);
 
+    const value = useMemo(() => ({
+        currentSong, isPlaying, currentTime, duration, volume,
+        likedSongs, recentSongs, playlists, isCurrentSongLiked,
+        playSong, togglePlay, seek, setVolume,
+        skipNext, skipPrev, toggleLikeCurrentSong, createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
+        play, pause, audioRef: audioRef as React.RefObject<HTMLAudioElement>,
+        isRemoteControlled, setIsRemoteControlled
+    }), [
+        currentSong, isPlaying, currentTime, duration, volume,
+        likedSongs, recentSongs, playlists, isCurrentSongLiked,
+        playSong, togglePlay, seek, setVolume,
+        skipNext, skipPrev, toggleLikeCurrentSong, createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
+        play, pause, isRemoteControlled
+    ]);
+
     return (
-        <PlayerContext.Provider value={{
-            currentSong, isPlaying, currentTime, duration, volume,
-            likedSongs, recentSongs, playlists, isCurrentSongLiked,
-            playSong, togglePlay, seek, setVolume,
-            skipNext, skipPrev, toggleLikeCurrentSong, createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
-        }}>
+        <PlayerContext.Provider value={value}>
             {children}
         </PlayerContext.Provider>
     );

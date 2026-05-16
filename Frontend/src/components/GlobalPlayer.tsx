@@ -64,6 +64,7 @@ export default function GlobalPlayer() {
         setVolume,
         skipNext,
         skipPrev,
+        isRemoteControlled,
     } = usePlayer();
     const navigate = useNavigate();
     const [isDraggingVolume, setIsDraggingVolume] = useState(false);
@@ -153,7 +154,7 @@ export default function GlobalPlayer() {
 
             {/* Middle: Controls + Progress */}
             <div className="flex flex-col items-center gap-1 md:gap-2 shrink-0 px-2 lg:px-4 max-w-[40%]">
-                <div className="flex items-center gap-2 md:gap-4 lg:gap-8 overflow-hidden">
+                <div className={`flex items-center gap-2 md:gap-4 lg:gap-8 overflow-hidden ${isRemoteControlled ? "opacity-40 pointer-events-none" : ""}`}>
                     <button
                         onClick={skipPrev}
                         className="text-white hover:text-primary transition-all duration-150 hidden md:block shrink-0 active:scale-95 active:translate-y-px"
@@ -185,15 +186,16 @@ export default function GlobalPlayer() {
                 </div>
 
                 {/* Progress bar */}
-                <div className="absolute bottom-0 left-0 right-0 md:static w-full flex items-center md:gap-3 md:mt-1">
+                <div className={`absolute bottom-0 left-0 right-0 md:static w-full flex items-center md:gap-3 md:mt-1 ${isRemoteControlled ? "pointer-events-none" : ""}`}>
                     <span className="text-xs text-slate-400 font-medium hidden md:block shrink-0 min-w-9 text-right">
                         {formatTime(currentTime)}
                     </span>
                     <div
                         aria-label="Seek"
-                        className="group h-1 flex-1 bg-white/10 rounded-full relative md:min-w-25 lg:min-w-50 cursor-pointer"
-                        onClick={handleProgressClick}
+                        className={`group h-1 flex-1 bg-white/10 rounded-full relative md:min-w-25 lg:min-w-50 ${isRemoteControlled ? "cursor-default" : "cursor-pointer"}`}
+                        onClick={isRemoteControlled ? undefined : handleProgressClick}
                         onKeyDown={(e) => {
+                            if (isRemoteControlled) return;
                             if (e.key === "ArrowRight")
                                 seek(Math.min(duration, currentTime + 5));
                             if (e.key === "ArrowLeft")

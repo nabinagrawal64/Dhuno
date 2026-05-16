@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { API_BASE_URL } from "../api/client";
+import { authUtils } from "../utils/auth";
 import toast from "react-hot-toast";
 
 interface SocketContextType {
@@ -29,7 +30,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             withCredentials: true,
             autoConnect: true,
             auth: {
-                token: localStorage.getItem("dhuno_token"),
+                token: authUtils.getToken(),
             },
         });
 
@@ -56,6 +57,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         socketInstance.on("online_count", (count: number) => {
             setOnlineCount(count);
         });
+
+        // Room playback events are handled by components/pages directly via `socket`.
 
         return () => {
             socketInstance.disconnect();

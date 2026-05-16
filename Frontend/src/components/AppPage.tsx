@@ -122,20 +122,15 @@ export default function AppPage({ children }: { children: ReactNode }) {
     const desktopLeft = sidebarOpen ? '16rem' : '88px'
     const desktopWidth = sidebarOpen ? 'calc(100vw - 16rem)' : 'calc(100vw - 88px)'
 
-    const routeClass =
-        location.pathname === '/home'
-            ? 'route-home'
-            : location.pathname === '/search'
-                ? 'route-search'
-                : location.pathname === '/library'
-                    ? 'route-library'
-                    : location.pathname === '/player'
-                            ? 'route-player'
-                            : location.pathname === '/notifications'
-                                ? 'route-notifications'
-                                : location.pathname.startsWith('/rooms')
-                                        ? 'route-rooms'
-                                        : 'route-default'
+    const routeClass = `desktop-shell ${
+                location.pathname === "/player" ? "route-player" : ""
+            } ${location.pathname === "/search" ? "route-search" : ""} ${
+                location.pathname === "/notifications"
+                    ? "route-notifications"
+                    : ""
+            } ${location.pathname === "/settings" ? "route-settings" : ""} ${
+                location.pathname === "/rooms/live" ? "route-live-room" : ""
+            }`
 
     useEffect(() => {
         const root = rootRef.current
@@ -245,80 +240,87 @@ export default function AppPage({ children }: { children: ReactNode }) {
                     <style
                         dangerouslySetInnerHTML={{
                             __html: `
-                .desktop-shell aside { display: none !important; }
-                .desktop-shell [class*="ml-64"] { margin-left: 0 !important; }
-                .desktop-shell [class*="left-64"] { left: ${desktopLeft} !important; }
-                .desktop-shell [class*="w-[calc(100vw-16rem)]"] { width: ${desktopWidth} !important; }
-                
-                /* Hide headers globally except for the search page */
-                .desktop-shell:not(.route-search) header { display: none !important; }
-                
-                /* Restore positioning for the search header */
-                .desktop-shell.route-search header {
-                  left: ${desktopLeft} !important;
-                  width: ${desktopWidth} !important;
-                  transition: left 300ms ease-out, width 300ms ease-out !important;
-                  display: flex !important; /* Ensure it is flex as per SearchPage design */
-                }
-                
-                .desktop-shell.route-player main {
-                  padding: 0 !important;
-                  margin: 0 !important;
-                  max-width: 100% !important;
-                  height: 100vh !important;
-                }
-                .desktop-shell.route-player .lg\\:ml-64 { margin-left: 0 !important; }
-                
-                .desktop-shell:not(.route-player) footer {
-                  left: ${desktopLeft} !important;
-                  width: ${desktopWidth} !important;
-                  transition: left 300ms ease-out, width 300ms ease-out !important;
-                }
+                                .desktop-shell aside { display: none !important; }
+                                .desktop-shell [class*="ml-64"] { margin-left: 0 !important; }
+                                .desktop-shell [class*="left-64"] { left: ${desktopLeft} !important; }
+                                .desktop-shell [class*="w-[calc(100vw-16rem)]"] { width: ${desktopWidth} !important; }
+                                
+                                /* Hide headers globally except for the search page */
+                                .desktop-shell:not(.route-search) header { display: none !important; }
+                                
+                                /* Restore positioning for the search header */
+                                .desktop-shell.route-search header {
+                                left: ${desktopLeft} !important;
+                                width: ${desktopWidth} !important;
+                                transition: left 300ms ease-out, width 300ms ease-out !important;
+                                display: flex !important; /* Ensure it is flex as per SearchPage design */
+                                }
+                                
+                                .desktop-shell.route-player main {
+                                padding: 0 !important;
+                                margin: 0 !important;
+                                max-width: 100% !important;
+                                height: 100vh !important;
+                                }
+                                .desktop-shell.route-player .lg\\:ml-64 { margin-left: 0 !important; }
+                                
+                                .desktop-shell:not(.route-player) footer {
+                                left: ${desktopLeft} !important;
+                                width: ${desktopWidth} !important;
+                                transition: left 300ms ease-out, width 300ms ease-out !important;
+                                }
 
-                .desktop-shell.route-notifications nav[class*="top"],
-                .desktop-shell.route-settings nav[class*="top"] {
-                  display: none !important;
-                }
-                @media (min-width: 1024px) {
-                  .desktop-shell:not(.route-player):not(.route-search) main {
-                    margin-top: 0 !important;
-                    padding: 2rem 2rem 8rem 2rem !important;
-                    height: 100vh !important;
-                    overflow-y: auto !important;
-                    box-sizing: border-box !important;
-                  }
-                  .desktop-shell.route-search main {
-                    padding: 2rem 2rem 8rem 2rem !important;
-                    height: 100vh !important;
-                    overflow-y: auto !important;
-                    box-sizing: border-box !important;
-                  }
-                }
-                .desktop-shell.route-notifications main,
-                .desktop-shell.route-settings main {
-                  margin-top: 0 !important;
-                  padding-top: 2rem !important;
-                  height: 100vh !important;
-                }
-                .desktop-shell:not(.route-player) main h1,
-                .desktop-shell:not(.route-player) main h2.text-4xl,
-                .desktop-shell:not(.route-player) main h1.text-4xl,
-                .desktop-shell:not(.route-player) main [class*="text-4xl"],
-                .desktop-shell:not(.route-player) main [class*="text-5xl"] {
-                  font-size: 3rem !important;
-                  line-height: 1 !important;
-                  font-weight: 800 !important;
-                  letter-spacing: -0.05em !important;
-                  margin-bottom: 0.5rem !important;
-                }
-                .desktop-shell:not(.route-player) main h1 + p,
-                .desktop-shell:not(.route-player) main h2 + p {
-                  font-size: 1rem !important;
-                  margin-top: 0.5rem !important;
-                  color: #94a3b8 !important;
-                  max-width: 28rem !important;
-                }
-              `
+                                .desktop-shell.route-notifications nav[class*="top"],
+                                .desktop-shell.route-settings nav[class*="top"] {
+                                display: none !important;
+                                }
+                                @media (min-width: 1024px) {
+                                .desktop-shell:not(.route-player):not(.route-search):not(.route-live-room) main {
+                                    margin-top: 0 !important;
+                                    padding: 2rem 2rem 8rem 2rem !important;
+                                    height: 100vh !important;
+                                    overflow-y: auto !important;
+                                    box-sizing: border-box !important;
+                                }
+                                .desktop-shell.route-live-room main {
+                                    margin-top: 0 !important;
+                                    padding: 2rem 2rem 6rem 2rem !important;
+                                    height: 100vh !important;
+                                    overflow-y: hidden !important;
+                                    box-sizing: border-box !important;
+                                }
+                                .desktop-shell.route-search main {
+                                    padding: 2rem 2rem 8rem 2rem !important;
+                                    height: 100vh !important;
+                                    overflow-y: auto !important;
+                                    box-sizing: border-box !important;
+                                }
+                                }
+                                .desktop-shell.route-notifications main,
+                                .desktop-shell.route-settings main {
+                                margin-top: 0 !important;
+                                padding-top: 2rem !important;
+                                height: 100vh !important;
+                                }
+                                .desktop-shell:not(.route-player) main h1,
+                                .desktop-shell:not(.route-player) main h2.text-4xl,
+                                .desktop-shell:not(.route-player) main h1.text-4xl,
+                                .desktop-shell:not(.route-player) main [class*="text-4xl"],
+                                .desktop-shell:not(.route-player) main [class*="text-5xl"] {
+                                font-size: 3rem !important;
+                                line-height: 1 !important;
+                                font-weight: 800 !important;
+                                letter-spacing: -0.05em !important;
+                                margin-bottom: 0.5rem !important;
+                                }
+                                .desktop-shell:not(.route-player) main h1 + p,
+                                .desktop-shell:not(.route-player) main h2 + p {
+                                font-size: 1rem !important;
+                                margin-top: 0.5rem !important;
+                                color: #94a3b8 !important;
+                                max-width: 28rem !important;
+                                }
+                            `
                         }}
                     />
                     <div
