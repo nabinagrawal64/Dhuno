@@ -168,14 +168,22 @@ export const playlistService = {
         };
     },
 
-    createPlaylist: async (title: string, songId?: string): Promise<{ success: boolean; playlist: PlaylistItem }> => {
+    createPlaylist: async (
+        titleOrFormData: string | FormData,
+        songId?: string
+    ): Promise<{ success: boolean; playlist: PlaylistItem }> => {
         const { API_BASE_URL } = await import('./client');
         const { authUtils } = await import('../utils/auth');
         
-        const formData = new FormData();
-        formData.append('title', title);
-        if (songId) {
-            formData.append('songId', songId);
+        let body: FormData;
+        if (titleOrFormData instanceof FormData) {
+            body = titleOrFormData;
+        } else {
+            body = new FormData();
+            body.append('title', titleOrFormData);
+            if (songId) {
+                body.append('songId', songId);
+            }
         }
         
         const headers: Record<string, string> = {};
@@ -185,7 +193,7 @@ export const playlistService = {
         const response = await fetch(`${API_BASE_URL}/playlists`, {
             method: 'POST',
             headers,
-            body: formData,
+            body,
         });
 
         const data = await response.json() as PlaylistApiResponse;

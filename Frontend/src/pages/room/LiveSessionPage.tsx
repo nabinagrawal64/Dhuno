@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { authUtils } from "../../utils/auth";
@@ -78,10 +79,10 @@ export default function LiveSessionPage() {
     const [remoteTime, setRemoteTime] = useState(0);
     const [remoteStart, setRemoteStart] = useState<number | null>(null);
     const [floating, setFloating] = useState<FloatingReaction[]>([]);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen] = useState(true);
     const lyricsRef = useRef<HTMLDivElement>(null);
     const rId = useRef(0);
-    const st = useRef<ReturnType<typeof setTimeout>>();
+    const st = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Auto-scroll lyrics (only when line changes and user isn't manually scrolling)
     useEffect(() => {
@@ -131,7 +132,14 @@ export default function LiveSessionPage() {
                 if (data) {
                     data.recentMessages = [...(data.recentMessages || [])].reverse();
                     setRoom(data);
-                    setParticipants(data.participants || [] as any);
+                    setParticipants((data.participants || []).map((p: any) => ({
+                        userId: p._id,
+                        socketId: "",
+                        fullName: p.fullName || "",
+                        username: p.username || "",
+                        avatar: p.avatar || "",
+                        role: p.role || "",
+                    })));
                 }
             }
         }).catch(() => toast.error("Failed to load room"));
@@ -214,7 +222,7 @@ export default function LiveSessionPage() {
             if (p.currentSong) { setRemotePlaying(true); setRemoteTime(0); setRemoteStart(Date.now()); setRoom(prev => prev ? { ...prev, currentSong: p.currentSong, queue: p.queue || prev.queue } : prev); }
             else { setRemotePlaying(false); setRemoteTime(0); setRemoteStart(null); setRoom(prev => prev ? { ...prev, currentSong: null as any } : prev); }
         };
-        const hhc = (p: any) => { if (p.roomId === roomId) toast.info("Host has changed"); };
+        const hhc = (p: any) => { if (p.roomId === roomId) toast("Host has changed"); };
         const herr = (p: any) => toast.error(p.message || "Room error");
 
         socket.on("room_state_sync", h);
@@ -591,7 +599,7 @@ export default function LiveSessionPage() {
                                     onTouchMove={() => { lastManualScroll.current = Date.now(); }}
                                 >
                                     <div className="py-[150px] md:py-[200px] flex flex-col items-center gap-6 w-full">
-                                        {lyricsLines.map((line, i) => {
+                                        {lyricsLines.map((line: string, i: number) => {
                                             const isActive = i === currentLine;
                                             return (
                                                 <p

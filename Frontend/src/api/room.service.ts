@@ -24,6 +24,7 @@ export interface RoomPreview {
         artist: string;
         artwork: string;
         audioUrl: string;
+        lyrics?: string;
     };
     queueCount: number;
     allowChat: boolean;

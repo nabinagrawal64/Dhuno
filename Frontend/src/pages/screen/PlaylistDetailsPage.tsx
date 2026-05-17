@@ -61,8 +61,8 @@ interface SongRowProps {
     onPlay: () => void;
     dragHandle?: boolean;
     dragProps?: {
-        attributes?: Record<string, unknown>;
-        listeners?: Record<string, unknown>;
+        attributes?: any;
+        listeners?: any;
     };
     isDragging?: boolean;
     onDownload?: () => void;

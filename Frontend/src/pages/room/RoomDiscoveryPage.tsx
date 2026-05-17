@@ -9,11 +9,10 @@ const categoryLabels = ["all", "public", "private", "friends"] as const;
 export default function RoomDiscoveryPage() {
     const navigate = useNavigate();
     const [rooms, setRooms] = useState<RoomPreview[]>([]);
-    const [activeCategory, setActiveCategory] = useState<(typeof categoryLabels)[number]>("all");
+    const [activeCategory] = useState<(typeof categoryLabels)[number]>("all");
     const [isLoading, setIsLoading] = useState(true);
     const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
     const [myId, setMyId] = useState("");
-    const [locationStatus, setLocationStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
 
     useEffect(() => {
         try {
@@ -42,14 +41,11 @@ export default function RoomDiscoveryPage() {
             return;
         }
 
-        setLocationStatus("requesting");
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                setLocationStatus("granted");
                 loadRooms(position.coords.latitude, position.coords.longitude);
             },
             (error) => {
-                setLocationStatus("denied");
                 console.error("Location error:", error);
                 toast.error("Location access denied. Showing all public rooms.");
                 loadRooms();
