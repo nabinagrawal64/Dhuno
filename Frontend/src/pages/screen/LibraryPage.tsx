@@ -8,7 +8,7 @@ function formatSavedCount(count: number) {
 }
 
 export default function LibraryPage() {
-    const { likedSongs, recentSongs, playlists } = usePlayer();
+    const { likedSongs, recentSongs, playlists, downloadedSongs } = usePlayer();
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const navigate = useNavigate();
 
@@ -86,18 +86,22 @@ export default function LibraryPage() {
                     </div>
                     {/* ... (Downloads and Recently Played cards - omitting for brevity as they remain same) ... */}
                     <div className="h-25">
-                        <div className="glass-panel h-full rounded-2xl md:rounded-3xl p-4 md:p-5 border border-white/5 flex items-center justify-between gap-3 md:gap-4">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/library/downloads")}
+                            className="glass-panel w-full h-full p-4 md:p-5 rounded-2xl md:rounded-3xl border border-white/5 flex items-center justify-between text-left hover:bg-surface-container-high/60 transition-all"
+                        >
                             <div className="flex items-center gap-3 md:gap-4">
                                 <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl bg-secondary/20 flex items-center justify-center shrink-0">
                                     <span className="material-symbols-outlined text-secondary text-lg">download_for_offline</span>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-sm md:text-base leading-tight">Downloads</h3>
-                                    <p className="text-[10px] md:text-xs text-slate-500">42 albums • 12GB</p>
+                                    <p className="text-[10px] md:text-xs text-slate-500">{downloadedSongs.length} tracks available</p>
                                 </div>
                             </div>
                             <span className="material-symbols-outlined text-slate-500 text-base">chevron_right</span>
-                        </div>
+                        </button>
                     </div>
                     <div className="h-25">
                         <button

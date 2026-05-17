@@ -10,6 +10,7 @@ import RoomDiscoveryPage from './pages/room/RoomDiscoveryPage'
 import FullPlayerPage from './pages/screen/FullPlayerPage'
 import LibraryPage from './pages/screen/LibraryPage'
 import LikedSongsPage from './pages/screen/LikedSongsPage'
+import DownloadsPage from './pages/screen/DownloadsPage'
 import ProfilePage from './pages/screen/ProfilePage'
 import SearchPage from './pages/screen/SearchPage'
 import RecentlyPlayedPage from './pages/screen/RecentlyPlayedPage'
@@ -75,6 +76,7 @@ function App() {
                 <Route path="/search" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><SearchPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><LibraryPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library/liked" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><LikedSongsPage /></AppPage></ProtectedRoute>} />
+                <Route path="/library/downloads" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><DownloadsPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library/recently-played" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><RecentlyPlayedPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library/playlist/:id" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><PlaylistDetailsPage /></AppPage></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><ProfilePage /></AppPage></ProtectedRoute>} />

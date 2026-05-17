@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Music2, LoaderCircle, Play } from "lucide-react";
+import { Music2, LoaderCircle, Play, Download, CheckCircle2 } from "lucide-react";
 import { songService, type SongItem } from "../../api/song.service";
 import { playlistService, type FeaturedPlaylistItem } from "../../api/playlist.service";
 import { usePlayer } from "../../context/PlayerContext";
@@ -24,7 +24,7 @@ export default function SearchPage() {
     const [featuredPlaylists, setFeaturedPlaylists] = useState<FeaturedPlaylistItem[]>([]);
     const [isFeaturedPlaylistsLoading, setIsFeaturedPlaylistsLoading] = useState(true);
 
-    const { playSong } = usePlayer();
+    const { playSong, downloadSong, isSongDownloaded, downloadingIds } = usePlayer();
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SongItem[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -168,13 +168,15 @@ export default function SearchPage() {
                                 {searchResults.map((song) => (
                                     <div
                                         key={song._id}
-                                        onClick={() => {
-                                            playSong({ _id: song._id, title: song.title, audioUrl: song.audioUrl ?? '', coverImage: song.coverImage, artistName: song.artistName || song.artist?.name || song.artist?.username || 'Artist', duration: song.duration });
-                                            addRecentSearch(query);
-                                        }}
                                         className="flex items-center gap-4 p-3 rounded-2xl border border-white/5 bg-surface-container-low hover:bg-surface-container-high cursor-pointer transition-all group"
                                     >
-                                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 shrink-0 relative">
+                                        <div 
+                                            className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 shrink-0 relative"
+                                            onClick={() => {
+                                                playSong({ _id: song._id, title: song.title, audioUrl: song.audioUrl ?? '', coverImage: song.coverImage, artistName: song.artistName || song.artist?.name || song.artist?.username || 'Artist', duration: song.duration });
+                                                addRecentSearch(query);
+                                            }}
+                                        >
                                             {song.coverImage ? (
                                                 <img src={song.coverImage} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                             ) : (
@@ -186,10 +188,43 @@ export default function SearchPage() {
                                                 <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: '"FILL" 1' }}>play_arrow</span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div 
+                                            className="flex-1 min-w-0"
+                                            onClick={() => {
+                                                playSong({ _id: song._id, title: song.title, audioUrl: song.audioUrl ?? '', coverImage: song.coverImage, artistName: song.artistName || song.artist?.name || song.artist?.username || 'Artist', duration: song.duration });
+                                                addRecentSearch(query);
+                                            }}
+                                        >
                                             <p className="font-bold text-on-surface truncate group-hover:text-primary transition-colors">{song.title}</p>
                                             <p className="text-xs text-slate-400 truncate">{song.artistName || song.artist?.name || song.artist?.username || 'Artist'}</p>
                                         </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!isSongDownloaded(song._id)) {
+                                                    downloadSong({
+                                                        _id: song._id,
+                                                        title: song.title,
+                                                        audioUrl: song.audioUrl ?? '',
+                                                        coverImage: song.coverImage,
+                                                        artistName: song.artistName || song.artist?.name || 'Artist',
+                                                        duration: song.duration
+                                                    });
+                                                }
+                                            }}
+                                            disabled={downloadingIds.includes(song._id)}
+                                            className={`p-2 rounded-xl transition-all ${
+                                                isSongDownloaded(song._id) 
+                                                    ? "text-secondary bg-secondary/10" 
+                                                    : "text-slate-400 hover:text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100"
+                                            } ${downloadingIds.includes(song._id) ? "animate-pulse opacity-100" : ""}`}
+                                        >
+                                            {isSongDownloaded(song._id) ? (
+                                                <CheckCircle2 size={18} />
+                                            ) : (
+                                                <Download size={18} />
+                                            )}
+                                        </button>
                                     </div>
                                 ))}
                             </div>

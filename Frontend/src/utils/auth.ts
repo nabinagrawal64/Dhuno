@@ -39,7 +39,9 @@ export const authUtils = {
      * In full migration, this would check httpOnly cookie via header inspection
      */
     getToken: () => {
-        return localStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token === "null" || token === "undefined") return null;
+        return token;
     },
 
     /**

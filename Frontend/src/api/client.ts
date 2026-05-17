@@ -53,7 +53,12 @@ export const apiClient = async (
             endpoint,
             status: response.status,
         });
-        window.location.href = "/login";
+        
+        // Avoid infinite redirect loops if we're already on /login
+        if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+        }
+        
         throw new Error("Session expired. Please login again.");
     }
 

@@ -14,6 +14,7 @@ export interface IUser extends Document {
 
     // ACCOUNT
     role: "user" | "artist" | "admin";
+    googleId?: string;
     isVerified: boolean;
     isArtistPro: boolean;
 
@@ -47,6 +48,9 @@ export interface IUser extends Document {
 
     // SECURITY
     twoFactorEnabled: boolean;
+    twoFactorOTP?: string;
+    twoFactorOTPExpires?: Date;
+    twoFactorBackupCodes?: string[];
 
     // DEVICES
     activeDevices: {
@@ -128,6 +132,11 @@ const userSchema = new Schema<IUser>(
             type: String,
             enum: ["user", "artist", "admin"],
             default: "user",
+        },
+
+        googleId: {
+            type: String,
+            default: "",
         },
 
         isVerified: {
@@ -241,6 +250,21 @@ const userSchema = new Schema<IUser>(
         twoFactorEnabled: {
             type: Boolean,
             default: false,
+        },
+
+        twoFactorOTP: {
+            type: String,
+            select: false,
+        },
+
+        twoFactorOTPExpires: {
+            type: Date,
+            select: false,
+        },
+
+        twoFactorBackupCodes: {
+            type: [String],
+            select: false,
         },
 
         // DEVICES

@@ -1,4 +1,4 @@
-import { Music2, Play, ArrowLeft, MoreHorizontal, GripVertical } from 'lucide-react';
+import { Music2, Play, ArrowLeft, MoreHorizontal, GripVertical, Download, CheckCircle2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePlayer } from '../../context/PlayerContext';
 import { useEffect, useState } from 'react';
@@ -65,6 +65,9 @@ interface SongRowProps {
         listeners?: Record<string, unknown>;
     };
     isDragging?: boolean;
+    onDownload?: () => void;
+    isDownloaded?: boolean;
+    isDownloading?: boolean;
 }
 
 function toPlayableSong(song: PlaylistSong) {
@@ -78,7 +81,7 @@ function toPlayableSong(song: PlaylistSong) {
     };
 }
 
-function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging = false }: SongRowProps) {
+function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging = false, onDownload, isDownloaded = false, isDownloading = false }: SongRowProps) {
     return (
         <div
             className={`w-full flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-2xl hover:bg-white/5 transition-all text-left group ${isDragging ? 'bg-white/10 shadow-2xl ring-1 ring-primary/20' : ''}`}
@@ -114,16 +117,47 @@ function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging 
                         <p className="text-xs text-slate-500 truncate">{song.artistName || 'Unknown Artist'}</p>
                     </div>
                 </div>
+            </button>
 
-                <div className="text-right shrink-0 pr-2">
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isDownloaded && onDownload) {
+                            onDownload();
+                        }
+                    }}
+                    disabled={isDownloading}
+                    className={`p-2 rounded-full transition-all ${
+                        isDownloaded 
+                            ? "text-secondary cursor-default" 
+                            : "text-slate-700 hover:text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100"
+                    } ${isDownloading ? "animate-pulse opacity-100" : ""}`}
+                >
+                    {isDownloaded ? (
+                        <CheckCircle2 size={18} />
+                    ) : (
+                        <Download size={18} />
+                    )}
+                </button>
+                <div className="text-right shrink-0 pr-2 min-w-[50px]">
                     <span className="text-xs font-medium text-slate-500">{formatTime(song.duration)}</span>
                 </div>
-            </button>
+            </div>
         </div>
     );
 }
 
-function SortableSongRow({ song, idx, onPlay }: SortableSongRowProps) {
+interface SortableSongRowProps {
+    song: PlaylistSong;
+    idx: number;
+    onPlay: () => void;
+    onDownload?: () => void;
+    isDownloaded?: boolean;
+    isDownloading?: boolean;
+}
+
+function SortableSongRow({ song, idx, onPlay, onDownload, isDownloaded, isDownloading }: SortableSongRowProps) {
     const {
         attributes,
         listeners,
@@ -150,14 +184,18 @@ function SortableSongRow({ song, idx, onPlay }: SortableSongRowProps) {
                 dragHandle
                 dragProps={{ attributes, listeners }}
                 isDragging={isDragging}
+                onDownload={onDownload}
+                isDownloaded={isDownloaded}
+                isDownloading={isDownloading}
             />
         </div>
     );
 }
 
+
 export default function PlaylistDetailsPage() {
     const { id } = useParams();
-    const { playlists, playSong } = usePlayer();
+    const { playlists, playSong, downloadSong, isSongDownloaded, downloadingIds } = usePlayer();
     const navigate = useNavigate();
     const [localSongs, setLocalSongs] = useState<PlaylistSong[]>([]);
     const [remotePlaylist, setRemotePlaylist] = useState<FeaturedPlaylistItem | null>(null);
@@ -361,6 +399,9 @@ export default function PlaylistDetailsPage() {
                                         song={song} 
                                         idx={idx} 
                                         onPlay={() => playSong(toPlayableSong(song))} 
+                                        onDownload={() => downloadSong(toPlayableSong(song))}
+                                        isDownloaded={isSongDownloaded(song._id)}
+                                        isDownloading={downloadingIds.includes(song._id)}
                                     />
                                 ))}
                             </SortableContext>
@@ -373,6 +414,9 @@ export default function PlaylistDetailsPage() {
                                     song={song}
                                     idx={idx}
                                     onPlay={() => playSong(toPlayableSong(song))}
+                                    onDownload={() => downloadSong(toPlayableSong(song))}
+                                    isDownloaded={isSongDownloaded(song._id)}
+                                    isDownloading={downloadingIds.includes(song._id)}
                                 />
                             ))}
                         </div>

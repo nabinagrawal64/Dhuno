@@ -144,22 +144,31 @@ const canControlPlayback = (roomState: RoomState, userId: string): boolean => {
 // ──────────────────────────────────────────────
 
 export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) => {
+    console.log("🛠️ Initializing Socket.IO with origins:", allowedOrigins);
+
     const io = new SocketIOServer(server, {
         cors: {
-            origin: allowedOrigins,
+            origin: allowedOrigins, // Restore specific origins for credentials support
+            methods: ["GET", "POST"],
             credentials: true,
         },
+        transports: ['websocket', 'polling'], // Allow fallback for stability
+        pingTimeout: 60000, // Increase timeouts
+        pingInterval: 25000,
     });
 
     let onlineCount = 0;
 
     io.on("connection", async (socket: Socket) => {
-        onlineCount++;
-        io.emit("online_count", onlineCount);
-        console.log("🟢 Client connected:", socket.id, `(Total: ${onlineCount})`);
+        try {
+            onlineCount++;
+            io.emit("online_count", onlineCount);
+            
+            const token = extractToken(socket);
+            const transport = socket.conn.transport.name;
+            console.log(`🟢 [${socket.id}] Connected (${transport}). Token: ${token ? 'YES' : 'NO'}. Total: ${onlineCount}`);
 
         // ── Auth ──
-        const token = extractToken(socket);
         const userId = token ? verifyToken(token) : null;
         let userInfo: ParticipantInfo | null = null;
 
@@ -175,10 +184,13 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                         avatar: user.avatar || "",
                         role: user.role || "user",
                     };
+                    console.log(`👤 [${socket.id}] Auth: ${user.username}`);
                 }
-            } catch {
-                console.warn(`Failed to fetch user ${userId} for socket ${socket.id}`);
+            } catch (err) {
+                console.error(`❌ [${socket.id}] DB Error:`, err);
             }
+        } else {
+            console.log(`👻 [${socket.id}] Guest`);
         }
 
         // Store auth info on socket for later use
@@ -715,7 +727,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
         });
 
         // ── Disconnect ──
-        socket.on("disconnect", () => {
+        socket.on("disconnect", (reason) => {
             onlineCount--;
             io.emit("online_count", onlineCount);
 
@@ -752,8 +764,18 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 }
             }
 
-            console.log("🔴 Client disconnected:", socket.id, `(Total: ${onlineCount})`);
+            const transport = socket.conn.transport.name;
+            console.log(`🔴 [${socket.id}] Disconnected (${transport}): ${reason}. Total: ${onlineCount}`);
         });
+
+        socket.on("error", (err) => {
+            console.error(`⚠️ [${socket.id}] Socket error:`, err);
+        });
+
+    } catch (err) {
+        console.error("🔥 Global Socket Connection Error:", err);
+        socket.disconnect();
+    }
     });
 
     return io;

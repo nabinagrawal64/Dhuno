@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request } from "express";
-import { signup, login, googleAuth, getMe, updateMe, deleteMe, logout, forgotPassword, verifyResetCode, resetPassword } from "../controllers/auth.controller";
+import { signup, login, googleAuth, getMe, updateMe, deleteMe, logout, forgotPassword, verifyResetCode, resetPassword, changePassword, verify2FALogin, requestEnable2FA, verifyEnable2FA, disable2FA } from "../controllers/auth.controller";
 import { protect } from "../middleware/auth.middleware";
 
 const router = express.Router();
@@ -82,6 +82,13 @@ router.get("/me", protect, getMe);
 router.put("/me", protect, updateMe);
 router.delete("/me", protect, deleteMe);
 router.post("/logout", protect, logout);
+router.post("/change-password", protect, changePassword);
+
+// 2FA
+router.post("/2fa/verify-login", resetLimiter, verify2FALogin);
+router.post("/2fa/request-enable", protect, requestEnable2FA);
+router.post("/2fa/verify-enable", protect, verifyEnable2FA);
+router.post("/2fa/disable", protect, disable2FA);
 
 // Password reset routes
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);

@@ -1,5 +1,8 @@
 import { createContext, useContext, useRef, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { playlistService, type PlaylistItem } from '../api/playlist.service';
+import { offlineDB, type DownloadedSong } from '../utils/db';
+import { authUtils } from '../utils/auth';
+import { toast } from 'react-hot-toast';
 
 export interface PlayerSong {
     _id: string;
@@ -34,6 +37,8 @@ interface PlayerContextType {
     volume: number;
     likedSongs: PlayerSong[];
     recentSongs: PlayerSong[];
+    downloadedSongs: PlayerSong[];
+    downloadingIds: string[];
     playlists: PlayerPlaylist[];
     isCurrentSongLiked: boolean;
     playSong: (song: PlayerSong, startTime?: number) => void;
@@ -45,6 +50,9 @@ interface PlayerContextType {
     play: () => void;
     pause: () => void;
     toggleLikeCurrentSong: () => void;
+    downloadSong: (song: PlayerSong) => Promise<void>;
+    removeDownload: (songId: string) => Promise<void>;
+    isSongDownloaded: (songId: string) => boolean;
     createPlaylistWithCurrentSong: (name: string) => Promise<void>;
     addCurrentSongToPlaylist: (playlistId: string) => Promise<void>;
     queue: PlayerSong[];
@@ -190,6 +198,7 @@ const PlayerContext = createContext<PlayerContextType | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const currentBlobUrlRef = useRef<string | null>(null);
     const [storedState] = useState(readStoredPlayerState);
     const [currentSong, setCurrentSong] = useState<PlayerSong | null>(storedState?.currentSong ?? null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -199,10 +208,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const [queue, setQueue] = useState<PlayerSong[]>(storedState?.queue ?? []);
     const [likedSongs, setLikedSongs] = useState<PlayerSong[]>(() => readStoredSongs(LIKED_SONGS_STORAGE_KEY));
     const [recentSongs, setRecentSongs] = useState<PlayerSong[]>(() => readStoredSongs(RECENT_SONGS_STORAGE_KEY));
+    const [downloadedSongs, setDownloadedSongs] = useState<PlayerSong[]>([]);
+    const [downloadingIds, setDownloadingIds] = useState<string[]>([]);
     const [playlists, setPlaylists] = useState<PlayerPlaylist[]>(() => readStoredPlaylists());
     const [isRemoteControlled, setIsRemoteControlled] = useState(false);
 
     const isCurrentSongLiked = currentSong ? likedSongs.some(song => song._id === currentSong._id) : false;
+
+    const refreshDownloadedSongs = useCallback(async () => {
+        try {
+            const songs = await offlineDB.getAllSongs();
+            setDownloadedSongs(songs.map(s => ({
+                _id: s._id,
+                title: s.title,
+                audioUrl: s.audioUrl,
+                coverImage: s.coverImage,
+                artistName: s.artistName,
+                duration: s.duration
+            })));
+        } catch (error) {
+            console.error('Failed to load downloaded songs:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshDownloadedSongs();
+    }, [refreshDownloadedSongs]);
 
     // Init audio element once
     useEffect(() => {
@@ -219,24 +250,37 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         audio.addEventListener('play', () => setIsPlaying(true));
         audio.addEventListener('pause', () => setIsPlaying(false));
 
-        if (storedState?.currentSong) {
-            audio.src = storedState.currentSong.audioUrl;
-            audio.load();
+        const initPlayer = async () => {
+            if (storedState?.currentSong) {
+                let url = storedState.currentSong.audioUrl;
+                const downloaded = await offlineDB.getSong(storedState.currentSong._id);
+                if (downloaded) {
+                    url = URL.createObjectURL(downloaded.audioBlob);
+                    currentBlobUrlRef.current = url;
+                }
+                audio.src = url;
+                audio.load();
 
-            if (storedState.currentTime > 0) {
-                const restorePosition = () => {
-                    audio.currentTime = Math.min(storedState.currentTime, audio.duration || storedState.currentTime);
-                    setCurrentTime(audio.currentTime);
-                };
+                if (storedState.currentTime > 0) {
+                    const restorePosition = () => {
+                        audio.currentTime = Math.min(storedState.currentTime, audio.duration || storedState.currentTime);
+                        setCurrentTime(audio.currentTime);
+                    };
 
-                audio.addEventListener('loadedmetadata', restorePosition, { once: true });
+                    audio.addEventListener('loadedmetadata', restorePosition, { once: true });
+                }
             }
-        }
+        };
+
+        initPlayer();
 
         audioRef.current = audio;
         return () => {
             audio.pause();
             audio.src = '';
+            if (currentBlobUrlRef.current) {
+                URL.revokeObjectURL(currentBlobUrlRef.current);
+            }
         };
     }, [storedState]);
 
@@ -272,6 +316,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }, [playlists]);
 
     const refreshPlaylists = useCallback(async () => {
+        const isAuthed = authUtils.isAuthenticated();
+        const isExpired = authUtils.isTokenExpired();
+        
+        if (!isAuthed || isExpired) {
+            console.log("⏭️ [PlayerContext] Skipping playlist refresh: Not authenticated or token expired", { isAuthed, isExpired });
+            return;
+        }
+        
+        console.log("🔄 [PlayerContext] Refreshing playlists...");
         try {
             const response = await playlistService.getMyPlaylists();
             setPlaylists(response.playlists.map(mapPlaylistItem));
@@ -288,10 +341,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setRecentSongs(prev => [song, ...prev.filter(item => item._id !== song._id)].slice(0, 12));
     }, []);
 
-    const playSong = useCallback((song: PlayerSong, startTime: number = 0) => {
+    const playSong = useCallback(async (song: PlayerSong, startTime: number = 0) => {
         const audio = audioRef.current;
         if (!audio) return;
-        audio.src = song.audioUrl;
+
+        if (currentBlobUrlRef.current) {
+            URL.revokeObjectURL(currentBlobUrlRef.current);
+            currentBlobUrlRef.current = null;
+        }
+
+        let url = song.audioUrl;
+        const downloaded = await offlineDB.getSong(song._id);
+        if (downloaded) {
+            url = URL.createObjectURL(downloaded.audioBlob);
+            currentBlobUrlRef.current = url;
+        }
+
+        audio.src = url;
         audio.load();
         
         if (startTime > 0) {
@@ -392,6 +458,55 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         });
     }, [currentSong]);
 
+    const downloadSong = useCallback(async (song: PlayerSong) => {
+        if (downloadingIds.includes(song._id)) return;
+        
+        const isAlreadyDownloaded = downloadedSongs.some(s => s._id === song._id);
+        if (isAlreadyDownloaded) {
+            toast.success('Song already downloaded');
+            return;
+        }
+
+        setDownloadingIds(prev => [...prev, song._id]);
+        const loadingToast = toast.loading(`Downloading ${song.title}...`);
+
+        try {
+            const response = await fetch(song.audioUrl);
+            if (!response.ok) throw new Error('Failed to fetch audio');
+            
+            const blob = await response.blob();
+            const downloadedSong: DownloadedSong = {
+                ...song,
+                audioBlob: blob,
+                downloadedAt: Date.now()
+            };
+
+            await offlineDB.saveSong(downloadedSong);
+            await refreshDownloadedSongs();
+            toast.success(`${song.title} downloaded offline!`, { id: loadingToast });
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast.error(`Failed to download ${song.title}`, { id: loadingToast });
+        } finally {
+            setDownloadingIds(prev => prev.filter(id => id !== song._id));
+        }
+    }, [downloadingIds, downloadedSongs, refreshDownloadedSongs]);
+
+    const removeDownload = useCallback(async (songId: string) => {
+        try {
+            await offlineDB.deleteSong(songId);
+            await refreshDownloadedSongs();
+            toast.success('Download removed');
+        } catch (error) {
+            console.error('Failed to remove download:', error);
+            toast.error('Failed to remove download');
+        }
+    }, [refreshDownloadedSongs]);
+
+    const isSongDownloaded = useCallback((songId: string) => {
+        return downloadedSongs.some(s => s._id === songId);
+    }, [downloadedSongs]);
+
     const createPlaylistWithCurrentSong = useCallback(async (name: string) => {
         if (!currentSong) return;
 
@@ -411,16 +526,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     const value = useMemo(() => ({
         currentSong, isPlaying, currentTime, duration, volume,
-        likedSongs, recentSongs, playlists, isCurrentSongLiked,
+        likedSongs, recentSongs, downloadedSongs, downloadingIds, playlists, isCurrentSongLiked,
         playSong, togglePlay, seek, setVolume,
-        skipNext, skipPrev, toggleLikeCurrentSong, createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
+        skipNext, skipPrev, toggleLikeCurrentSong, downloadSong, removeDownload, isSongDownloaded,
+        createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
         play, pause, audioRef: audioRef as React.RefObject<HTMLAudioElement>,
         isRemoteControlled, setIsRemoteControlled
     }), [
         currentSong, isPlaying, currentTime, duration, volume,
-        likedSongs, recentSongs, playlists, isCurrentSongLiked,
+        likedSongs, recentSongs, downloadedSongs, downloadingIds, playlists, isCurrentSongLiked,
         playSong, togglePlay, seek, setVolume,
-        skipNext, skipPrev, toggleLikeCurrentSong, createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
+        skipNext, skipPrev, toggleLikeCurrentSong, downloadSong, removeDownload, isSongDownloaded,
+        createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
         play, pause, isRemoteControlled
     ]);
 

@@ -37,6 +37,26 @@ export interface ResetPasswordData {
     newPassword: string;
 }
 
+export interface ChangePasswordData {
+    currentPassword: string;
+    newPassword: string;
+}
+
+export interface Verify2FAData {
+    email: string;
+    code: string;
+}
+
+export interface AuthResponse {
+    success: boolean;
+    message: string;
+    token?: string;
+    user?: UserProfile;
+    twoFactorRequired?: boolean;
+    email?: string;
+    backupCodes?: string[];
+}
+
 export interface UserProfile {
     _id: string;
     fullName: string;
@@ -46,6 +66,7 @@ export interface UserProfile {
     bannerImage: string;
     bio: string;
     role: "user" | "artist" | "admin";
+    googleId?: string;
     isVerified: boolean;
     isArtistPro: boolean;
     followers: string[];
@@ -121,6 +142,34 @@ export const authService = {
     deleteMe: async () => {
         return apiClient("/auth/me", {
             method: "DELETE",
+        }) as Promise<{ success: boolean; message: string }>;
+    },
+    changePassword: async (data: ChangePasswordData) => {
+        return apiClient("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }) as Promise<{ success: boolean; message: string }>;
+    },
+    verify2FALogin: async (data: Verify2FAData) => {
+        return apiClient("/auth/2fa/verify-login", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }) as Promise<AuthResponse>;
+    },
+    requestEnable2FA: async () => {
+        return apiClient("/auth/2fa/request-enable", {
+            method: "POST",
+        }) as Promise<{ success: boolean; message: string }>;
+    },
+    verifyEnable2FA: async (code: string) => {
+        return apiClient("/auth/2fa/verify-enable", {
+            method: "POST",
+            body: JSON.stringify({ code }),
+        }) as Promise<AuthResponse>;
+    },
+    disable2FA: async () => {
+        return apiClient("/auth/2fa/disable", {
+            method: "POST",
         }) as Promise<{ success: boolean; message: string }>;
     },
 };

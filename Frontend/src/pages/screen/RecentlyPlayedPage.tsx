@@ -1,4 +1,4 @@
-import { History } from 'lucide-react';
+import { History, Download, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../context/PlayerContext';
 
@@ -12,7 +12,7 @@ function formatTime(sec?: number) {
 }
 
 export default function RecentlyPlayedPage() {
-    const { recentSongs, playSong } = usePlayer();
+    const { recentSongs, playSong, downloadSong, isSongDownloaded, downloadingIds } = usePlayer();
     const navigate = useNavigate();
 
     return (
@@ -21,8 +21,9 @@ export default function RecentlyPlayedPage() {
                 <button
                     type="button"
                     onClick={() => navigate('/library')}
-                    className="mb-6 text-sm font-semibold text-primary hover:opacity-80 transition-opacity"
+                    className="mb-6 text-sm font-semibold text-primary hover:opacity-80 transition-opacity flex items-center gap-2"
                 >
+                    <span className="material-symbols-outlined text-sm">arrow_back</span>
                     Back to Library
                 </button>
 
@@ -49,33 +50,60 @@ export default function RecentlyPlayedPage() {
                 ) : (
                     <div className="grid grid-cols-1 gap-4 w-full">
                         {recentSongs.map(song => (
-                            <button
+                            <div
                                 key={song._id}
-                                type="button"
-                                onClick={() => playSong(song)}
-                                className="w-full flex items-center gap-4 rounded-2xl bg-black/10 hover:bg-white/5 border border-white/5 px-4 py-3 text-left transition-colors"
+                                className="w-full flex items-center gap-4 rounded-2xl bg-black/10 hover:bg-white/5 border border-white/5 px-4 py-3 text-left transition-colors group"
                             >
-                                <img
-                                    src={song.coverImage || DEFAULT_COVER}
-                                    alt={song.title}
-                                    className="w-14 h-14 rounded-xl object-cover shrink-0"
-                                />
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-semibold truncate">{song.title}</p>
-                                    <p className="text-sm text-slate-500 truncate">{song.artistName || 'Unknown artist'}</p>
-                                    <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
-                                        <span className="rounded-full bg-white/5 px-2 py-0.5">Recently played</span>
-                                        <span>•</span>
-                                        <span>{formatTime(song.duration)}</span>
+                                <div className="cursor-pointer flex-1 flex items-center gap-4" onClick={() => playSong(song)}>
+                                    <img
+                                        src={song.coverImage || DEFAULT_COVER}
+                                        alt={song.title}
+                                        className="w-14 h-14 rounded-xl object-cover shrink-0"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold truncate group-hover:text-primary transition-colors">{song.title}</p>
+                                        <p className="text-sm text-slate-500 truncate">{song.artistName || 'Unknown artist'}</p>
+                                        <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
+                                            <span className="rounded-full bg-white/5 px-2 py-0.5">Recently played</span>
+                                            {isSongDownloaded(song._id) && (
+                                                <span className="rounded-full bg-secondary/20 text-secondary px-2 py-0.5 flex items-center gap-1">
+                                                    <CheckCircle2 size={10} />
+                                                    Offline
+                                                </span>
+                                            )}
+                                            <span>•</span>
+                                            <span>{formatTime(song.duration)}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="shrink-0 text-right">
-                                    <span className="text-xs text-slate-400 block">Play</span>
-                                    <span className="text-[11px] text-slate-500 block mt-1">
-                                        {song.duration ? formatTime(song.duration) : 'Unknown'}
-                                    </span>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!isSongDownloaded(song._id)) {
+                                                downloadSong(song);
+                                            }
+                                        }}
+                                        disabled={downloadingIds.includes(song._id)}
+                                        className={`p-2 rounded-full transition-all ${
+                                            isSongDownloaded(song._id) 
+                                                ? "text-secondary cursor-default" 
+                                                : "text-slate-500 hover:text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100"
+                                        } ${downloadingIds.includes(song._id) ? "animate-pulse" : ""}`}
+                                    >
+                                        {isSongDownloaded(song._id) ? (
+                                            <CheckCircle2 size={20} />
+                                        ) : (
+                                            <Download size={20} className={downloadingIds.includes(song._id) ? "opacity-50" : ""} />
+                                        )}
+                                    </button>
+                                    <div className="shrink-0 text-right min-w-12">
+                                        <span className="text-[11px] text-slate-500 block">
+                                            {song.duration ? formatTime(song.duration) : 'Unknown'}
+                                        </span>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 )}

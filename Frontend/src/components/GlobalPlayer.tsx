@@ -59,6 +59,9 @@ export default function GlobalPlayer() {
         playlists,
         createPlaylistWithCurrentSong,
         addCurrentSongToPlaylist,
+        downloadSong,
+        isSongDownloaded,
+        downloadingIds,
         togglePlay,
         seek,
         setVolume,
@@ -263,17 +266,28 @@ export default function GlobalPlayer() {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            showActionToast({
-                                                title: "Downloads",
-                                                message: "Open the Library to manage offline tracks and saved downloads.",
-                                                accent: "bg-gradient-to-br from-emerald-500 to-teal-500",
-                                                Icon: Download,
-                                            });
+                                            if (currentSong) {
+                                                downloadSong(currentSong);
+                                            }
                                             setIsActionMenuOpen(false);
                                         }}
-                                        className="w-full text-left px-3 py-2 rounded-xl text-sm text-on-surface hover:bg-white/5 transition-colors"
+                                        disabled={!currentSong || isSongDownloaded(currentSong._id) || downloadingIds.includes(currentSong._id)}
+                                        className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
+                                            currentSong && isSongDownloaded(currentSong._id) ? "text-secondary bg-white/5" : "text-on-surface hover:bg-white/5"
+                                        }`}
                                     >
-                                        Downloads
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {currentSong && isSongDownloaded(currentSong._id) 
+                                                    ? "Song downloaded" 
+                                                    : downloadingIds.includes(currentSong?._id ?? '') 
+                                                        ? "Downloading..." 
+                                                        : "Download for offline"}
+                                            </span>
+                                            {currentSong && isSongDownloaded(currentSong._id) && (
+                                                <Download className="h-3.5 w-3.5 text-secondary" />
+                                            )}
+                                        </div>
                                     </button>
                                 </div>
                             ) : (

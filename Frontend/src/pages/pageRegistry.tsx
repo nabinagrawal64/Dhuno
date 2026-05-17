@@ -4,6 +4,7 @@ import SignupPage from './auth/SignupPage';
 import HomePage from './home/HomePage';
 import SearchPage from './screen/SearchPage';
 import LibraryPage from './screen/LibraryPage';
+import DownloadsPage from './screen/DownloadsPage';
 import ProfilePage from './screen/ProfilePage';
 import ClipFeedPage from './screen/ClipFeedPage';
 import FullPlayerPage from './screen/FullPlayerPage';
@@ -55,6 +56,13 @@ export const dhunoPages: DhunoPage[] = [
     path: "/library",
     source: "Page/Screen/library desktop.html",
     Component: LibraryPage,
+  },
+  {
+    title: "Screen / Downloads",
+    category: "Screen",
+    path: "/library/downloads",
+    source: "Page/Screen/downloads desktop.html",
+    Component: DownloadsPage,
   },
   {
     title: "Screen / Profile",
