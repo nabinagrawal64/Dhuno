@@ -1,0 +1,47 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to the project directory (adjust this path to where your repo is cloned on EC2)
+            cd ~/Dhuno/Backend
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Build the new Docker image
+            docker build -t dhuno-backend .
+            
+            # Stop and remove the old container if it exists
+            docker stop dhuno-api || true
+            docker rm dhuno-api || true
+            
+            # Run the new container
+            docker run -d \
+              --name dhuno-api \
+              -p 4000:4000 \
+              --env-file .env \
+              --restart always \
+              dhuno-backend
+            
+            # Optional: Clean up old images to save space
+            docker image prune -f
