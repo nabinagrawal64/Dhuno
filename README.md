@@ -56,7 +56,7 @@ A context-aware music streaming platform that adapts the listening experience us
 - **Runtime**: Node.js with Express.js 5
 - **Language**: TypeScript
 - **Database**: MongoDB with Mongoose
-- **Cache**: Redis (ioredis)
+- **Cache**: Redis (ioredis) for trending-song cache, room snapshots, and rate limiting
 - **Real-time**: Socket.io
 - **Media Storage**: Cloudinary
 - **Authentication**: JWT + bcryptjs
@@ -67,6 +67,158 @@ A context-aware music streaming platform that adapts the listening experience us
 ### DevOps
 - **Containerization**: Docker
 - **Deployment**: Docker Compose ready
+
+---
+
+## 🧱 Architecture at a Glance
+
+```mermaid
+flowchart TB
+	UI[React Frontend] --> API[Express API]
+	API --> DB[(MongoDB)]
+	API --> SOCKET[Socket.IO]
+	SOCKET <--> REDIS[(Redis)]
+	API --> QUEUE[BullMQ Jobs]
+	QUEUE --> WORKERS[Workers / Background Jobs]
+```
+
+### Runtime Flow
+
+- The React app sends requests to the Express API for auth, search, playlists, and room actions.
+- MongoDB stores users, songs, playlists, rooms, clips, and search history.
+- Socket.IO keeps live room playback, chat, reactions, and presence in sync.
+- Redis stores fast-changing room state, queue snapshots, cache entries, and rate-limit counters.
+- BullMQ is the background job layer for deferred tasks such as email, cleanup, and other non-blocking work.
+
+---
+
+## 🗃️ Database Schema Overview
+
+```mermaid
+classDiagram
+	class User {
+		+string fullName
+		+string username
+		+string email
+		+string role
+		+ObjectId[] playlists
+		+ObjectId[] joinedRooms
+		+string[] likedSongs
+		+string[] recentlyPlayed
+	}
+
+	class Song {
+		+string title
+		+ObjectId artist
+		+string artistName
+		+string[] tags
+		+string[] genre
+		+number plays
+		+number saves
+		+boolean isTrending
+	}
+
+	class Playlist {
+		+string title
+		+ObjectId owner
+		+string[] songs
+		+string visibility
+		+number totalTracks
+		+number totalDuration
+	}
+
+	class Room {
+		+string roomName
+		+ObjectId host
+		+ObjectId[] participants
+		+object currentSong
+		+object[] queue
+		+boolean isLive
+		+number participantCount
+		+number totalJoins
+	}
+
+	class SearchHistory {
+		+ObjectId user
+		+string query
+		+string category
+		+string resultType
+		+string clickedItemId
+	}
+
+	User "1" --> "many" Playlist : owns
+	User "1" --> "many" Room : creates / joins
+	User "1" --> "many" SearchHistory : writes
+	Playlist "many" --> "many" Song : contains song ids
+	Room "1" --> "many" User : participants
+	Song "many" --> "1" User : uploaded by / liked by
+```
+
+### Main Relationships
+
+- **User → Playlist**: a user owns one or more playlists.
+- **User → Room**: a user can create and join multiple listening rooms.
+- **Room → User**: rooms track participants, host, and moderators.
+- **Playlist → Song**: playlists store ordered song identifiers.
+- **User → SearchHistory**: search activity is tracked for recent queries and click behavior.
+
+---
+
+## ⚡ Redis Usage
+
+Redis is used as a fast, ephemeral data layer around the live music experience.
+
+### What is cached
+
+- **Trending songs** from the song feed
+- **Room state snapshots** for live Socket.IO sessions
+- **Room queue snapshots** for fast reconnects and room recovery
+- **Room presence/session data** to track active sockets
+- **Rate-limit counters** for public API protection
+
+### TTL values
+
+- **Trending songs cache**: `5 minutes`
+- **Room state snapshot**: `1 hour`
+- **Room queue snapshot**: `1 hour`
+- **Presence heartbeat**: `90 seconds`
+- **Rate-limit window**: configured per route/store
+
+### Cache invalidation strategy
+
+- Trending-song cache is cleared when song data changes, so users do not see stale charts.
+- Room queue snapshots are refreshed whenever the queue changes.
+- Room state is persisted after live room updates and restored on reconnect.
+- Presence keys expire automatically if a socket stops heartbeating.
+
+### Why Redis helps
+
+- Reduces repeat reads from MongoDB for frequently accessed song and room data.
+- Keeps room join and reconnect flows fast during live sessions.
+- Prevents long request times by moving transient state out of the primary database.
+- Supports rate limiting without adding extra application-side bookkeeping.
+
+---
+
+## 📈 Performance Notes
+
+These are the kinds of improvements worth highlighting in interviews. Replace them with measured numbers from your own environment if you have them.
+
+- Search response times can drop from about `250 ms` to around `60 ms` for warm-cache requests.
+- Redis reduces repeated database reads for trending songs and active rooms.
+- Room reconnection is faster because the current session state can be restored from Redis instead of rebuilt from scratch.
+- Queue snapshotting keeps live room actions responsive because state updates do not block the main request path.
+
+---
+
+## 🚀 Future Enhancements
+
+- Recommendation engine based on listening history and room behavior
+- AI playlist generation from mood, genre, and activity patterns
+- Offline synchronization for cached songs and queued actions
+- Vector search for semantic song discovery
+- ML-based mood detection to drive smarter personalization
+- Worker-backed background jobs for notifications, cleanup, and analytics
 
 ---
 
