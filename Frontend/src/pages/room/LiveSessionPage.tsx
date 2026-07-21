@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { roomService, type RoomDetail } from "../../api/room.service";
+import { roomService, type RoomDetail, type RoomParticipant } from "../../api/room.service";
 import { useSocket } from "../../context/SocketContext";
 import { usePlayer } from "../../context/PlayerContext";
 
@@ -65,7 +66,7 @@ export default function LiveSessionPage() {
 
         socket.emit("join_room", roomId);
 
-        const handleMessage = (payload: { roomId: string; message: { sender: { username?: string } | null; text: string; createdAt: string } }) => {
+        const handleMessage = (payload: { roomId: string; message: { sender: RoomParticipant | null; text: string; createdAt: string } }) => {
             if (payload.roomId !== roomId) return;
             setRoom((current) => {
                 if (!current) return current;

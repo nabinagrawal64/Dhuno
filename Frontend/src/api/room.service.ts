@@ -18,7 +18,7 @@ export interface RoomPreview {
     host?: RoomHost | null;
     participantCount: number;
     totalJoins: number;
-    currentSong: {
+    currentSong?: {
         trackId: string;
         title: string;
         artist: string;
