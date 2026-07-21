@@ -5,6 +5,8 @@ import { Types } from "mongoose";
 import User from "../models/user.model";
 import Room from "../models/room.model";
 import Song from "../models/song.model";
+import { redisDelete, redisGetJson, redisSetAdd, redisSetJson, redisSetRemove } from "../utils/redis-cache";
+import { cleanupRoomPresence, loadRoomQueueSnapshot, registerRoomState, removeRoomPresence, syncRoomQueueSnapshot, touchRoomPresence } from "../utils/redis-room-state";
 
 // ──────────────────────────────────────────────
 // Types
@@ -62,11 +64,26 @@ interface RoomState {
 
 const rooms = new Map<string, RoomState>();
 
+const PRESENCE_TTL_SECONDS = 90;
+const PRESENCE_HEARTBEAT_MS = 30_000;
+
+const roomPresenceTimers = new Map<string, NodeJS.Timeout>();
+const presenceTimerKey = (roomId: string, socketId: string) => `${roomId}:${socketId}`;
+
 const getRoomState = (roomId: string): RoomState | undefined => rooms.get(roomId);
 
 const ensureRoomState = async (roomId: string, hostId: string, socketId: string): Promise<RoomState> => {
     let state = rooms.get(roomId);
     if (!state) {
+        const cachedState = await redisGetJson<any>(redisRoomStateKey(roomId));
+        if (cachedState) {
+            const hydrated = hydrateRoomState(cachedState, roomId, socketId);
+            if (hydrated) {
+                rooms.set(roomId, hydrated);
+                return hydrated;
+            }
+        }
+
         // Try to load initial state from DB
         let dbRoom = null;
         try {
@@ -74,6 +91,8 @@ const ensureRoomState = async (roomId: string, hostId: string, socketId: string)
         } catch (err) {
             console.error("Error loading room from DB:", err);
         }
+
+        const cachedQueue = await loadRoomQueueSnapshot<RoomState["queue"][number]>(roomId);
 
         state = {
             currentSong: dbRoom?.currentSong?.trackId ? {
@@ -88,7 +107,7 @@ const ensureRoomState = async (roomId: string, hostId: string, socketId: string)
             currentTime: 0,
             startTime: null,
             lastUpdate: Date.now(),
-            queue: dbRoom?.queue?.map((q: any) => ({
+            queue: cachedQueue.length > 0 ? cachedQueue : (dbRoom?.queue?.map((q: any) => ({
                 trackId: q.trackId,
                 title: q.title,
                 artist: q.artist,
@@ -96,7 +115,7 @@ const ensureRoomState = async (roomId: string, hostId: string, socketId: string)
                 audioUrl: q.audioUrl || "",
                 lyrics: q.lyrics || "",
                 addedBy: String(q.addedBy),
-            })) || [],
+            })) || []),
             participants: new Map(),
             hostId: dbRoom?.host ? String(dbRoom.host) : hostId,
             hostSocketId: socketId,
@@ -108,6 +127,7 @@ const ensureRoomState = async (roomId: string, hostId: string, socketId: string)
             skipVotes: new Set(),
         };
         rooms.set(roomId, state);
+        await persistRoomState(roomId, state);
     }
     return state;
 };
@@ -139,6 +159,88 @@ const canControlPlayback = (roomState: RoomState, userId: string): boolean => {
     return roomState.hostId === userId;
 };
 
+const redisRoomStateKey = (roomId: string) => `room:socket-state:${roomId}`;
+const redisRoomSessionsKey = (roomId: string) => `room:socket-sessions:${roomId}`;
+
+const serializeRoomState = (state: RoomState) => ({
+    currentSong: state.currentSong,
+    isPlaying: state.isPlaying,
+    currentTime: state.currentTime,
+    startTime: state.startTime,
+    lastUpdate: state.lastUpdate,
+    queue: state.queue,
+    participants: Array.from(state.participants.values()),
+    hostId: state.hostId,
+    hostSocketId: state.hostSocketId,
+    djMode: state.djMode,
+    currentDJ: state.currentDJ,
+    allowQueueAdd: state.allowQueueAdd,
+    allowChat: state.allowChat,
+    reactions: state.reactions,
+    skipVotes: Array.from(state.skipVotes.values()),
+});
+
+const hydrateRoomState = (snapshot: any, roomId: string, socketId: string): RoomState | null => {
+    if (!snapshot) {
+        return null;
+    }
+
+    const participants = new Map<string, ParticipantInfo>();
+    if (Array.isArray(snapshot.participants)) {
+        snapshot.participants.forEach((participant: ParticipantInfo) => {
+            if (participant?.socketId) {
+                participants.set(participant.socketId, participant);
+            }
+        });
+    }
+
+    return {
+        currentSong: snapshot.currentSong || null,
+        isPlaying: Boolean(snapshot.isPlaying),
+        currentTime: Number(snapshot.currentTime || 0),
+        startTime: snapshot.startTime ?? null,
+        lastUpdate: Number(snapshot.lastUpdate || Date.now()),
+        queue: Array.isArray(snapshot.queue) ? snapshot.queue : [],
+        participants,
+        hostId: snapshot.hostId || "",
+        hostSocketId: snapshot.hostSocketId || socketId,
+        djMode: Boolean(snapshot.djMode),
+        currentDJ: snapshot.currentDJ || null,
+        allowQueueAdd: snapshot.allowQueueAdd ?? true,
+        allowChat: snapshot.allowChat ?? true,
+        reactions: Array.isArray(snapshot.reactions) ? snapshot.reactions : [],
+        skipVotes: new Set(Array.isArray(snapshot.skipVotes) ? snapshot.skipVotes : []),
+    };
+};
+
+const persistRoomState = async (roomId: string, state: RoomState) => {
+    await redisSetJson(redisRoomStateKey(roomId), serializeRoomState(state), 60 * 60);
+    await redisSetAdd(redisRoomSessionsKey(roomId), ...Array.from(state.participants.keys()));
+    await registerRoomState(roomId);
+};
+
+const startPresenceHeartbeat = (roomId: string, socketId: string) => {
+    const key = presenceTimerKey(roomId, socketId);
+    if (roomPresenceTimers.has(key)) {
+        return;
+    }
+
+    const timer = setInterval(() => {
+        void touchRoomPresence(roomId, socketId, PRESENCE_TTL_SECONDS);
+    }, PRESENCE_HEARTBEAT_MS);
+    timer.unref?.();
+    roomPresenceTimers.set(key, timer);
+};
+
+const stopPresenceHeartbeat = (roomId: string, socketId: string) => {
+    const key = presenceTimerKey(roomId, socketId);
+    const timer = roomPresenceTimers.get(key);
+    if (timer) {
+        clearInterval(timer);
+        roomPresenceTimers.delete(key);
+    }
+};
+
 // ──────────────────────────────────────────────
 // Socket initializer
 // ──────────────────────────────────────────────
@@ -156,6 +258,11 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
         pingTimeout: 60000, // Increase timeouts
         pingInterval: 25000,
     });
+
+    const cleanupTimer = setInterval(() => {
+        void cleanupRoomPresence();
+    }, 60_000);
+    cleanupTimer.unref?.();
 
     let onlineCount = 0;
 
@@ -219,6 +326,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     }
 
                     state.participants.set(socket.id, { ...info, socketId: socket.id });
+                    void touchRoomPresence(roomId, socket.id, PRESENCE_TTL_SECONDS);
+                    startPresenceHeartbeat(roomId, socket.id);
 
                     // Emit current state to the joining participant
                     socket.emit("room_state_sync", {
@@ -238,6 +347,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     const participantList = Array.from(state.participants.values());
                     io.to(roomId).emit("room_participants", { roomId, participants: participantList });
                     io.to(roomId).emit("room_participant_count", { roomId, count: participantList.length });
+
+                    void persistRoomState(roomId, state);
                 });
             }
 
@@ -254,14 +365,19 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
 
             if (state) {
                 state.participants.delete(socket.id);
+                stopPresenceHeartbeat(roomId, socket.id);
+                void removeRoomPresence(roomId, socket.id);
+                void redisSetRemove(redisRoomSessionsKey(roomId), socket.id);
 
                 if (state.participants.size === 0) {
                     rooms.delete(roomId);
                     console.log(`Room ${roomId} removed (no participants)`);
+                    void redisDelete(redisRoomStateKey(roomId), redisRoomSessionsKey(roomId));
                 } else {
                     const participantList = Array.from(state.participants.values());
                     io.to(roomId).emit("room_participants", { roomId, participants: participantList });
                     io.to(roomId).emit("room_participant_count", { roomId, count: participantList.length });
+                    void persistRoomState(roomId, state);
                 }
             }
 
@@ -293,6 +409,9 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
             };
 
             io.to(payload.roomId).emit("room_message", { roomId: payload.roomId, message });
+            if (state) {
+                void persistRoomState(payload.roomId, state);
+            }
 
             // Persist to MongoDB (keep newest-first, cap at 50)
             try {
@@ -333,6 +452,9 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 userId: uid,
                 timestamp: Date.now(),
             });
+            if (state) {
+                void persistRoomState(payload.roomId, state);
+            }
         });
 
         // ── Playback control (host/DJ only) ──
@@ -385,6 +507,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 currentSong: state.currentSong,
                 startTime: state.startTime,
             });
+            void persistRoomState(payload.roomId, state);
 
             // Persist state to DB
             Room.findByIdAndUpdate(payload.roomId, {
@@ -412,6 +535,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 roomId: payload.roomId,
                 at: state.currentTime,
             });
+            void persistRoomState(payload.roomId, state);
         });
 
         socket.on("room_seek", (payload: { roomId: string; to: number }) => {
@@ -434,6 +558,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 roomId: payload.roomId,
                 to: state.currentTime,
             });
+            void persistRoomState(payload.roomId, state);
         });
 
         socket.on("room_next", async (payload: { roomId: string }) => {
@@ -493,12 +618,15 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     currentSong: state.currentSong,
                     queue: state.queue
                 }).catch(() => {});
+                void syncRoomQueueSnapshot(payload.roomId, state.queue);
+                void persistRoomState(payload.roomId, state);
             } else {
                 state.isPlaying = false;
                 state.currentSong = null;
                 state.startTime = null;
                 state.currentTime = 0;
                 io.to(payload.roomId).emit("room_next", { roomId: payload.roomId, currentSong: null, queue: [] });
+                void persistRoomState(payload.roomId, state);
             }
         });
 
@@ -532,6 +660,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 roomId: payload.roomId,
                 queue: state.queue,
             });
+            void syncRoomQueueSnapshot(payload.roomId, state.queue);
+            void persistRoomState(payload.roomId, state);
 
             // Persist to MongoDB
             Room.findByIdAndUpdate(payload.roomId, {
@@ -563,6 +693,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 roomId: payload.roomId,
                 queue: state.queue,
             });
+            void syncRoomQueueSnapshot(payload.roomId, state.queue);
+            void persistRoomState(payload.roomId, state);
         });
 
         socket.on("room_remove_from_queue", (payload: { roomId: string; trackIndex: number }) => {
@@ -581,6 +713,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     roomId: payload.roomId,
                     queue: state.queue,
                 });
+                void syncRoomQueueSnapshot(payload.roomId, state.queue);
+                void persistRoomState(payload.roomId, state);
             }
         });
 
@@ -625,6 +759,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     currentSong: state.currentSong,
                     startTime: state.startTime,
                 });
+                void persistRoomState(payload.roomId, state);
             };
 
             // Host/DJ can skip immediately
@@ -673,6 +808,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 djMode: state.djMode,
                 currentDJ: state.currentDJ,
             });
+            void persistRoomState(payload.roomId, state);
         });
 
         socket.on("room_assign_dj", (payload: { roomId: string; userId: string }) => {
@@ -691,6 +827,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 djMode: state.djMode,
                 currentDJ: state.currentDJ,
             });
+            void persistRoomState(payload.roomId, state);
         });
 
         // ── Playback sync (broadcast host/DJ current song to room) ──
@@ -724,6 +861,7 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                 currentTime: state.currentTime,
                 isPlaying: state.isPlaying,
             });
+            void persistRoomState(payload.roomId, state);
         });
 
         // ── Disconnect ──
@@ -735,6 +873,9 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
             for (const [roomId, state] of rooms.entries()) {
                 if (state.participants.has(socket.id)) {
                     state.participants.delete(socket.id);
+                    stopPresenceHeartbeat(roomId, socket.id);
+                    void removeRoomPresence(roomId, socket.id);
+                    void redisSetRemove(redisRoomSessionsKey(roomId), socket.id);
 
                     if (state.hostSocketId === socket.id) {
                         // Host disconnected — assign new host or close

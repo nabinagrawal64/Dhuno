@@ -3,6 +3,20 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request } from "express";
 import { signup, login, googleAuth, getMe, updateMe, deleteMe, logout, forgotPassword, verifyResetCode, resetPassword, changePassword, verify2FALogin, requestEnable2FA, verifyEnable2FA, disable2FA } from "../controllers/auth.controller";
 import { protect } from "../middleware/auth.middleware";
+import { createRedisRateLimitStore } from "../utils/redis-rate-limit-store";
+const createLimiter = (prefix: string, windowMs: number, max: number, keyGenerator: (req: Request) => string, message: string) => {
+    const store = createRedisRateLimitStore(prefix, windowMs);
+
+    return rateLimit({
+        windowMs,
+        max,
+        keyGenerator,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { success: false, message },
+        ...(store ? { store } : {}),
+    });
+};
 
 const router = express.Router();
 
@@ -25,54 +39,19 @@ const keyByUserIdentifier = (...fields: string[]) => {
 };
 
 // LOGIN — strictest: brute force target (10 attempts / 15 min)
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    keyGenerator: keyByUserIdentifier("email"),
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many login attempts. Please try again after 15 minutes." },
-});
+const loginLimiter = createLimiter("rl:login", 15 * 60 * 1000, 10, keyByUserIdentifier("email"), "Too many login attempts. Please try again after 15 minutes.");
 
 // SIGNUP — prevents mass registration (5 accounts / hour)
-const signupLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 5,
-    keyGenerator: keyByUserIdentifier("email", "username"),
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many accounts created. Please try again after an hour." },
-});
+const signupLimiter = createLimiter("rl:signup", 60 * 60 * 1000, 5, keyByUserIdentifier("email", "username"), "Too many accounts created. Please try again after an hour.");
 
 // GOOGLE AUTH — OAuth flow, slightly more lenient (15 / 15 min)
-const googleLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 15,
-    keyGenerator: keyByUserIdentifier("email", "googleId"),
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many requests. Please try again later." },
-});
+const googleLimiter = createLimiter("rl:google", 15 * 60 * 1000, 15, keyByUserIdentifier("email", "googleId"), "Too many requests. Please try again later.");
 
 // FORGOT PASSWORD — very tight: prevents email enumeration (3 / hour)
-const forgotPasswordLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 3,
-    keyGenerator: keyByUserIdentifier("email"),
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many password reset requests. Please try again after an hour." },
-});
+const forgotPasswordLimiter = createLimiter("rl:forgot-password", 60 * 60 * 1000, 3, keyByUserIdentifier("email"), "Too many password reset requests. Please try again after an hour.");
 
 // VERIFY CODE / RESET PASSWORD — prevents code guessing (5 / 15 min)
-const resetLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    keyGenerator: keyByUserIdentifier("email"),
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many attempts. Please try again after 15 minutes." },
-});
+const resetLimiter = createLimiter("rl:reset", 15 * 60 * 1000, 5, keyByUserIdentifier("email"), "Too many attempts. Please try again after 15 minutes.");
 
 // Authentication
 router.post("/signup", signupLimiter, signup);

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "build": "tsc",
+    "lint": "eslint \"src/**/*.{ts,mts,cts}\"",
     "prestart": "npm run build",
     "start": "node dist/server.js"
   },
@@ -43,6 +44,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -50,8 +52,11 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^25.7.0",
     "@types/nodemailer": "^8.0.0",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.4"
   }
 }

@@ -9,6 +9,10 @@ import { Types } from "mongoose";
 import User from "../models/user.model";
 import Artist from "../models/artist.model";
 import Playlist from "../models/playlist.model";
+import { redisDelete, redisGetJson, redisSetJson } from "../utils/redis-cache";
+
+const TRENDING_SONGS_CACHE_KEY = "songs:trending:v1";
+const TRENDING_SONGS_CACHE_TTL = 5 * 60;
 
 // HELPER: UPLOAD TO CLOUDINARY
 const uploadToCloudinary = (
@@ -131,6 +135,8 @@ export const uploadSong = async (
             }
         }
 
+        await redisDelete(TRENDING_SONGS_CACHE_KEY);
+
         (req as any).io.emit("new_song", song);
 
         res.status(201).json({
@@ -233,6 +239,8 @@ export const updateSong = async (
             { new: true }
         ).populate("artist", "name username avatar verified");
 
+        await redisDelete(TRENDING_SONGS_CACHE_KEY);
+
         res.status(200).json({
             success: true,
             message: "Song updated successfully",
@@ -285,10 +293,21 @@ export const getTrendingSongs = async (
     res: Response
 ): Promise<void> => {
     try {
+        const cachedSongs = await redisGetJson<any[]>(TRENDING_SONGS_CACHE_KEY);
+        if (cachedSongs) {
+            res.status(200).json({
+                success: true,
+                songs: cachedSongs,
+            });
+            return;
+        }
+
         const songs = await Song.find({})
             .sort({ plays: -1 })
             .limit(10)
             .populate("artist", "fullName username avatar verified");
+
+        await redisSetJson(TRENDING_SONGS_CACHE_KEY, songs, TRENDING_SONGS_CACHE_TTL);
 
         res.status(200).json({
             success: true,

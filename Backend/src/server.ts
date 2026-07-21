@@ -7,6 +7,7 @@ import http from "http";
 import { initializeSocket } from "./sockets/socket";
 
 import connectDB from "./config/db";
+import { connectRedis } from "./config/redis";
 import authRoutes from "./routes/auth.routes";
 import playlistRoutes from "./routes/playlist.routes";
 import roomRoutes from "./routes/room.routes";
@@ -14,6 +15,7 @@ import songRoutes from "./routes/song.routes";
 
 dotenv.config();
 connectDB();
+void connectRedis();
 
 const app = express();
 const server = http.createServer(app);
