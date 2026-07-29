@@ -20,11 +20,11 @@ export default function RecentlyPlayedPage() {
             <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full max-w-none">
                 <button
                     type="button"
-                    onClick={() => navigate('/library')}
+                    onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/library')}
                     className="mb-6 text-sm font-semibold text-primary hover:opacity-80 transition-opacity flex items-center gap-2"
                 >
                     <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    Back to Library
+                    Back
                 </button>
 
                 <section className="rounded-3xl p-4 sm:p-6 md:p-8 bg-linear-to-br from-[#12202b] via-[#0f131b] to-surface-container border border-white/5 mb-4 sm:mb-6 md:mb-8">

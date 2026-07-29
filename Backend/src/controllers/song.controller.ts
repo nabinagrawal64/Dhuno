@@ -9,6 +9,7 @@ import { Types } from "mongoose";
 import User from "../models/user.model";
 import Artist from "../models/artist.model";
 import Playlist from "../models/playlist.model";
+import Notification from "../models/notification.model";
 import { redisDelete, redisGetJson, redisSetJson } from "../utils/redis-cache";
 
 const TRENDING_SONGS_CACHE_KEY = "songs:trending:v1";
@@ -137,7 +138,45 @@ export const uploadSong = async (
 
         await redisDelete(TRENDING_SONGS_CACHE_KEY);
 
-        (req as any).io.emit("new_song", song);
+        (req as any).io?.emit("new_song", song);
+
+        // Notify all users about the new song release
+        try {
+            const allUsers = await User.find({ _id: { $ne: currentUserId } }).select("_id");
+            if (allUsers.length > 0) {
+                const artistDisplayName = artistProfile.name || currentUser.fullName || "An artist";
+                const notificationDocs = allUsers.map((user) => ({
+                    receiver: user._id,
+                    sender: currentUser._id,
+                    senderName: artistDisplayName,
+                    senderAvatar: uploadedCover?.secure_url || currentUser.avatar || "",
+                    type: "creator-update" as const,
+                    category: "activity" as const,
+                    title: `New Song Release 🎵`,
+                    message: `${artistDisplayName} released a new track "${title}"`,
+                    actionLabel: "Listen Now",
+                    actionUrl: `/search?q=${encodeURIComponent(title)}`,
+                    metadata: { songTitle: title },
+                }));
+
+                const createdNotifications = await Notification.insertMany(notificationDocs);
+
+                (req as any).io?.emit("new_notification", {
+                    type: "creator-update",
+                    category: "activity",
+                    title: `New Song Release 🎵`,
+                    message: `${artistDisplayName} released a new track "${title}"`,
+                    senderName: artistDisplayName,
+                    senderAvatar: uploadedCover?.secure_url || currentUser.avatar || "",
+                    actionLabel: "Listen Now",
+                    actionUrl: `/search?q=${encodeURIComponent(title)}`,
+                    createdAt: new Date(),
+                    sampleId: createdNotifications[0]?._id
+                });
+            }
+        } catch (notifErr) {
+            console.error("Failed to dispatch song release notifications:", notifErr);
+        }
 
         res.status(201).json({
             success: true,

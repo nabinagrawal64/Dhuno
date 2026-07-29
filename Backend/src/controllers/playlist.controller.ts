@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Playlist from '../models/playlist.model';
 import Song from '../models/song.model';
 import User from '../models/user.model';
+import Notification from '../models/notification.model';
 import { AuthRequest } from '../types/request.types';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
@@ -269,6 +270,47 @@ export const createPlaylist = async (req: AuthRequest, res: Response): Promise<v
         });
 
         await addPlaylistToUser(String(req.user), playlist._id.toString());
+
+        // Dispatch notifications for playlist creation
+        try {
+            const creator = await User.findById(req.user);
+            if (creator) {
+                const otherUsers = await User.find({ _id: { $ne: req.user } }).select("_id");
+                if (otherUsers.length > 0) {
+                    const creatorName = creator.fullName || creator.username || "A creator";
+                    const notificationDocs = otherUsers.map((u) => ({
+                        receiver: u._id,
+                        sender: creator._id,
+                        senderName: creatorName,
+                        senderAvatar: coverImage || creator.avatar || "",
+                        type: "creator-update" as const,
+                        category: "activity" as const,
+                        title: `New Playlist Created 🎧`,
+                        message: `${creatorName} created a new playlist "${title}"`,
+                        playlistId: playlist._id,
+                        actionLabel: "View Playlist",
+                        actionUrl: `/library/playlist/${playlist._id}`,
+                        metadata: { playlistName: title },
+                    }));
+
+                    await Notification.insertMany(notificationDocs);
+
+                    (req as any).io?.emit("new_notification", {
+                        type: "creator-update",
+                        category: "activity",
+                        title: `New Playlist Created 🎧`,
+                        message: `${creatorName} created a new playlist "${title}"`,
+                        senderName: creatorName,
+                        senderAvatar: coverImage || creator.avatar || "",
+                        actionLabel: "View Playlist",
+                        actionUrl: `/library/playlist/${playlist._id}`,
+                        createdAt: new Date(),
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error("Failed to dispatch playlist creation notifications:", notifErr);
+        }
 
         res.status(201).json({ success: true, playlist: normalizePlaylist(playlist) });
     } catch (error) {

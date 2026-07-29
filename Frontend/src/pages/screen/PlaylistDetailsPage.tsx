@@ -84,42 +84,46 @@ function toPlayableSong(song: PlaylistSong) {
 function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging = false, onDownload, isDownloaded = false, isDownloading = false }: SongRowProps) {
     return (
         <div
-            className={`w-full flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-2xl hover:bg-white/5 transition-all text-left group ${isDragging ? 'bg-white/10 shadow-2xl ring-1 ring-primary/20' : ''}`}
+            className={`w-full grid grid-cols-[1.5rem_2rem_1fr_auto] md:grid-cols-[2rem_2.5rem_1fr_auto] items-center gap-3 md:gap-4 p-2.5 rounded-2xl hover:bg-white/5 transition-all text-left group ${
+                isDragging ? 'bg-white/10 shadow-2xl ring-1 ring-primary/20' : ''
+            }`}
         >
-            {dragHandle ? (
-                <button
-                    {...(dragProps?.attributes ?? {})}
-                    {...(dragProps?.listeners ?? {})}
-                    className="p-2 text-slate-700 hover:text-primary cursor-grab active:cursor-grabbing shrink-0"
-                >
-                    <GripVertical size={18} />
-                </button>
-            ) : (
-                <div className="w-8 shrink-0" />
-            )}
+            {/* Drag Handle */}
+            <div className="flex items-center justify-center">
+                {dragHandle ? (
+                    <button
+                        {...(dragProps?.attributes ?? {})}
+                        {...(dragProps?.listeners ?? {})}
+                        className="p-1 text-slate-600 hover:text-primary cursor-grab active:cursor-grabbing shrink-0"
+                    >
+                        <GripVertical size={16} />
+                    </button>
+                ) : null}
+            </div>
 
+            {/* Index */}
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-primary transition-colors text-center">
+                {(idx + 1).toString().padStart(2, '0')}
+            </span>
+
+            {/* Title / Artist with Cover Image tightly bound */}
             <button
                 onClick={onPlay}
-                className="flex-1 flex items-center gap-4 min-w-0"
+                className="flex items-center gap-3.5 min-w-0 text-left cursor-pointer group-hover:opacity-90 transition-opacity"
             >
-                <span className="hidden md:block w-8 text-sm font-medium text-slate-600 group-hover:text-primary transition-colors">
-                    {(idx + 1).toString().padStart(2, '0')}
-                </span>
-
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <img
-                        src={song.coverImage || DEFAULT_COVER}
-                        alt={song.title}
-                        className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover bg-surface-container shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{song.title}</p>
-                        <p className="text-xs text-slate-500 truncate">{song.artistName || 'Unknown Artist'}</p>
-                    </div>
+                <img
+                    src={song.coverImage || DEFAULT_COVER}
+                    alt={song.title}
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl object-cover bg-surface-container shrink-0 shadow-md group-hover:scale-105 transition-transform"
+                />
+                <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-white truncate group-hover:text-primary transition-colors">{song.title}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{song.artistName || 'Unknown Artist'}</p>
                 </div>
             </button>
 
-            <div className="flex items-center gap-4">
+            {/* Actions & Duration */}
+            <div className="flex items-center gap-3 justify-end">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -131,8 +135,9 @@ function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging 
                     className={`p-2 rounded-full transition-all ${
                         isDownloaded 
                             ? "text-secondary cursor-default" 
-                            : "text-slate-700 hover:text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100"
+                            : "text-slate-500 hover:text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100"
                     } ${isDownloading ? "animate-pulse opacity-100" : ""}`}
+                    title={isDownloaded ? "Downloaded offline" : "Download song"}
                 >
                     {isDownloaded ? (
                         <CheckCircle2 size={18} />
@@ -140,8 +145,8 @@ function SongRow({ song, idx, onPlay, dragHandle = false, dragProps, isDragging 
                         <Download size={18} />
                     )}
                 </button>
-                <div className="text-right shrink-0 pr-2 min-w-[50px]">
-                    <span className="text-xs font-medium text-slate-500">{formatTime(song.duration)}</span>
+                <div className="text-right shrink-0 pr-2 min-w-[45px]">
+                    <span className="text-xs font-medium text-slate-400">{formatTime(song.duration)}</span>
                 </div>
             </div>
         </div>
@@ -268,10 +273,10 @@ export default function PlaylistDetailsPage() {
                     <Music2 className="w-16 h-16 text-slate-700 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold">Playlist not found</h1>
                     <button 
-                        onClick={() => navigate('/library')}
+                        onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/library')}
                         className="mt-4 text-primary font-bold"
                     >
-                        Go back to Library
+                        Go back
                     </button>
                 </div>
             </div>
@@ -318,7 +323,7 @@ export default function PlaylistDetailsPage() {
                 <div className="relative z-10 w-full pt-20 pb-6 px-4 md:px-6 lg:px-8">
                     <button 
                         type="button"
-                        onClick={() => navigate('/library')}
+                        onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/library')}
                         className="absolute top-6 left-4 md:left-6 lg:left-8 p-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                     >
                         <ArrowLeft className="h-5 w-5" />
@@ -371,9 +376,9 @@ export default function PlaylistDetailsPage() {
             </div>
 
             <div className="px-4 md:px-6 lg:px-8 pb-44">
-                <div className="hidden md:grid grid-cols-[3rem_3rem_1fr_auto] gap-4 px-4 py-3 border-b border-white/5 text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
-                    <span className="w-8"></span>
-                    <span className="w-8">#</span>
+                <div className="hidden md:grid grid-cols-[2rem_2.5rem_1fr_auto] items-center gap-4 px-2.5 py-3 border-b border-white/5 text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                    <span></span>
+                    <span className="text-center">#</span>
                     <span>Title / Artist</span>
                     <span className="text-right pr-2">Duration</span>
                 </div>

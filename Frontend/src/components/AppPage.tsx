@@ -3,35 +3,45 @@ import GlobalPlayer from './GlobalPlayer'
 import MobileNavbar from './MobileNavbar'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { authService, type UserProfile } from '../api/auth.service'
 
 function resolveRouteFromAnchor(anchor: HTMLAnchorElement) {
-    const href = (anchor.getAttribute('href') ?? '').trim().toLowerCase()
-    if (href.startsWith('/')) {
+    const href = (anchor.getAttribute('href') ?? '').trim()
+    if (href.startsWith('/') && !href.startsWith('//')) {
         return href
     }
-
-    const text = (anchor.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
-    const iconText = (
-        anchor.querySelector('.material-symbols-outlined')?.textContent ?? ''
-    ).trim().toLowerCase()
-    const combined = `${text} ${iconText}`
-
-    if (combined.includes('home')) return '/home'
-    if (combined.includes('search') || combined.includes('discover')) return '/search'
-    if (combined.includes('library')) return '/library'
-    if (combined.includes('profile') || combined.includes('person')) return '/profile'
-    if (combined.includes('room') || combined.includes('groups')) return '/rooms/discovery'
-    if (combined.includes('live') || combined.includes('session')) return '/rooms/live'
-    if (combined.includes('create')) return '/rooms/create'
-    if (combined.includes('player')) return '/player'
-    if (combined.includes('notification') || combined.includes('notify')) return '/notifications'
-
     return null
 }
 
 function UnifiedSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
     const location = useLocation()
     const isMobile = useIsMobile(1024)
+    const [profile, setProfile] = useState<UserProfile | null>(null)
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadProfile = async () => {
+            try {
+                const response = await authService.getMe()
+                if (isMounted) {
+                    setProfile(response.user)
+                }
+            } catch {
+                if (isMounted) {
+                    setProfile(null)
+                }
+            }
+        }
+
+        void loadProfile()
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    const displayName = profile?.fullName?.trim() || profile?.username?.trim() || 'Dhuno User'
 
     const links = [
         { to: '/home', label: 'Home', icon: 'home' },
@@ -102,7 +112,7 @@ function UnifiedSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: () =>
                 <p
                     className={"text-sm font-bold text-on-surface transition-all duration-300 " + (isOpen ? 'max-h-8 opacity-100' : 'max-h-0 opacity-0')}
                 >
-                    Dhuno User
+                    {displayName}
                 </p>
                 {!isOpen ? (
                     <div className="mx-auto h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--color-primary-rgb),0.5)]" />

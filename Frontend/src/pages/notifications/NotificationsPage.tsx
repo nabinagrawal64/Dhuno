@@ -1,21 +1,151 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { CheckCheck, Trash2, BellOff, Volume2, Music, Sparkles } from "lucide-react";
+import { notificationService, type NotificationItem } from "../../api/notification.service";
+import { useSocket } from "../../context/SocketContext";
+
 export default function NotificationsPage() {
+    const navigate = useNavigate();
+    const { socket } = useSocket();
+
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeCategory, setActiveCategory] = useState<"all" | "activity" | "invites" | "alerts">("all");
+
+    const fetchNotifications = async () => {
+        try {
+            setLoading(true);
+            const res = await notificationService.getNotifications();
+            if (res.success) {
+                setNotifications(res.notifications || []);
+            }
+        } catch (err) {
+            console.error("Failed to load notifications:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void fetchNotifications();
+    }, []);
+
+    // Listen for live socket notifications
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (data: any) => {
+            console.log("🔔 [NotificationsPage] Received live notification:", data);
+            toast.success(data.message || data.title || "New notification!", {
+                icon: "🔔",
+                position: "top-right",
+            });
+
+            const newNotif: NotificationItem = {
+                _id: data.sampleId || `temp-${Date.now()}`,
+                senderName: data.senderName || "Dhuno",
+                senderAvatar: data.senderAvatar || "",
+                type: data.type || "creator-update",
+                category: data.category || "activity",
+                title: data.title || "New Notification",
+                message: data.message || "",
+                actionLabel: data.actionLabel || "View",
+                actionUrl: data.actionUrl || "",
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+
+            setNotifications((prev) => [newNotif, ...prev]);
+        };
+
+        socket.on("new_notification", handleNewNotification);
+
+        return () => {
+            socket.off("new_notification", handleNewNotification);
+        };
+    }, [socket]);
+
+    const handleMarkAsRead = async (id: string, actionUrl?: string) => {
+        try {
+            setNotifications((prev) =>
+                prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+            );
+            if (!id.startsWith("temp-")) {
+                await notificationService.markAsRead(id);
+            }
+        } catch (err) {
+            console.error("Failed to mark notification read:", err);
+        }
+
+        if (actionUrl) {
+            navigate(actionUrl);
+        }
+    };
+
+    const handleMarkAllAsRead = async () => {
+        try {
+            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+            await notificationService.markAllAsRead();
+            toast.success("All notifications marked as read");
+        } catch (err) {
+            toast.error("Failed to mark all as read");
+        }
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            setNotifications((prev) => prev.filter((n) => n._id !== id));
+            if (!id.startsWith("temp-")) {
+                await notificationService.deleteNotification(id);
+            }
+            toast.success("Notification removed");
+        } catch (err) {
+            toast.error("Failed to delete notification");
+        }
+    };
+
+    const handleClearAll = async () => {
+        try {
+            setNotifications([]);
+            await notificationService.clearAll();
+            toast.success("All notifications cleared");
+        } catch (err) {
+            toast.error("Failed to clear notifications");
+        }
+    };
+
+    const filteredNotifications = notifications.filter((item) => {
+        if (activeCategory === "all") return true;
+        return item.category === activeCategory;
+    });
+
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return "Just now";
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 172800) return "Yesterday";
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    };
+
     return (
-        <div className="bg-surface-dim text-on-surface font-body relative selection:bg-primary/30 selection:text-primary w-full">
+        <div className="bg-surface-dim text-on-surface font-body relative selection:bg-primary/30 selection:text-primary w-full min-h-screen">
             <style
                 dangerouslySetInnerHTML={{
                     __html: `.material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .glow-shadow {
-            box-shadow: 0 0 40px rgba(90, 255, 225, 0.04);
-        }
-        .glass-panel {
-            backdrop-filter: blur(16px);
-            background: rgba(28, 32, 39, 0.6);
-        }
-        .coral-accent-glow {
-            box-shadow: 0 0 15px rgba(255, 184, 187, 0.15);
-        }`,
+                        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+                    }
+                    .glass-panel {
+                        backdrop-filter: blur(16px);
+                        background: rgba(28, 32, 39, 0.6);
+                    }`,
                 }}
             />
             <div>
@@ -26,207 +156,193 @@ export default function NotificationsPage() {
                 {/* Main Content Area */}
                 <main className="pt-6 md:pt-12 lg:pt-20 pb-44 px-4 md:px-6 lg:px-8 w-full">
                     {/* Header Section */}
-                    <section className="md:mb-5 mb-2">
-                        <div className="flex items-start justify-between lg:justify-start gap-3 md:gap-4 w-full">
-                            <div className="min-w-0 flex-1">
-                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-headline tracking-tighter">
-                                    Notifications
-                                </h1>
+                    <section className="mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-headline tracking-tighter text-white">
+                                        Notifications
+                                    </h1>
+                                    {unreadCount > 0 && (
+                                        <span className="px-3 py-1 rounded-full bg-primary/20 text-primary font-bold text-xs border border-primary/30 animate-pulse">
+                                            {unreadCount} New
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-slate-400 text-sm mt-1">
+                                    Stay updated with song releases, creator updates, and community activity.
+                                </p>
                             </div>
+
+                            {/* Header Actions */}
+                            {notifications.length > 0 && (
+                                <div className="flex items-center gap-3 shrink-0">
+                                    {unreadCount > 0 && (
+                                        <button
+                                            onClick={handleMarkAllAsRead}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                                        >
+                                            <CheckCheck className="w-4 h-4 text-primary" />
+                                            Mark all read
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={handleClearAll}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/20 transition-all cursor-pointer"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Clear all
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </section>
 
-                    {/* Filter Chips (No Lines) */}
-                    <section className="flex gap-3">
-                        <button className="px-6 py-2 rounded-full bg-primary/10 text-primary font-label text-sm font-semibold hover:bg-primary/20 transition-colors">
-                            All Activity
+                    {/* Filter Chips */}
+                    <section className="flex flex-wrap gap-3 mb-6">
+                        <button
+                            onClick={() => setActiveCategory("all")}
+                            className={`px-6 py-2 rounded-full font-label text-sm font-semibold transition-all cursor-pointer ${
+                                activeCategory === "all"
+                                    ? "bg-primary text-on-primary shadow-lg shadow-primary/20"
+                                    : "bg-surface-container-high/40 text-slate-400 hover:bg-surface-container-highest hover:text-white"
+                            }`}
+                        >
+                            All ({notifications.length})
                         </button>
-                        <button className="px-6 py-2 rounded-full bg-surface-container-high/40 backdrop-blur-md text-on-surface-variant font-label text-sm font-semibold hover:bg-surface-container-highest transition-colors">
+                        <button
+                            onClick={() => setActiveCategory("activity")}
+                            className={`px-6 py-2 rounded-full font-label text-sm font-semibold transition-all cursor-pointer ${
+                                activeCategory === "activity"
+                                    ? "bg-primary text-on-primary shadow-lg shadow-primary/20"
+                                    : "bg-surface-container-high/40 text-slate-400 hover:bg-surface-container-highest hover:text-white"
+                            }`}
+                        >
+                            Activity
+                        </button>
+                        <button
+                            onClick={() => setActiveCategory("invites")}
+                            className={`px-6 py-2 rounded-full font-label text-sm font-semibold transition-all cursor-pointer ${
+                                activeCategory === "invites"
+                                    ? "bg-primary text-on-primary shadow-lg shadow-primary/20"
+                                    : "bg-surface-container-high/40 text-slate-400 hover:bg-surface-container-highest hover:text-white"
+                            }`}
+                        >
                             Invites
                         </button>
-                        <button className="px-6 py-2 rounded-full bg-surface-container-high/40 backdrop-blur-md text-on-surface-variant font-label text-sm font-semibold hover:bg-surface-container-highest transition-colors">
+                        <button
+                            onClick={() => setActiveCategory("alerts")}
+                            className={`px-6 py-2 rounded-full font-label text-sm font-semibold transition-all cursor-pointer ${
+                                activeCategory === "alerts"
+                                    ? "bg-primary text-on-primary shadow-lg shadow-primary/20"
+                                    : "bg-surface-container-high/40 text-slate-400 hover:bg-surface-container-highest hover:text-white"
+                            }`}
+                        >
                             Alerts
                         </button>
                     </section>
 
                     {/* Notifications List */}
-                    <section className="flex flex-col my-5 gap-4 pb-10">
-                        {/* Item 1: Social Session Invite */}
-                        <div className="group relative flex items-center gap-6 p-5 rounded-2xl bg-surface-container-high/40 backdrop-blur-lg border border-outline-variant/15 overflow-hidden transition-all hover:bg-surface-container-high/60">
-                            {/* Hover Glow */}
-                            <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                            {/* Avatar */}
-                            <div className="relative size-14 shrink-0 rounded-full overflow-hidden shadow-[0_0_20px_rgba(90,255,225,0.1)]">
-                                <img
-                                    alt="Jane Doe"
-                                    className="w-full h-full object-cover"
-                                    data-alt="moody portrait of a man with neon blue and cyan rim lighting against a dark background"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCrj1DjxuoXZgyVj1YE616lYYxdKAflOCrRgcEryiKighz4zQVayaUHdomgPuNjUU7I0mcEVW2KQXsWJo5Y00lo5CQM29bK4vvDOJL0uc9ZK_9iFQFWav4pCIM7GHImN2JhGit997xxZ3tX-4s5dCDJ6osOULGz74HhRt23cig3uIiaxlauaFRvk8MGvF60Bb_3KlFEduO_eSw4B37BU1eIiQNCY7FeMrLFsX-dwAExS5J0FC3yZawo7rBn_W2UtBmHkflcEIUM6Az"
-                                />
-                                {/* Online Indicator */}
-                                <div className="absolute bottom-0 right-0 size-3.5 bg-primary rounded-full border-2 border-surface-container-high" />
+                    <section className="flex flex-col gap-4 pb-10">
+                        {loading ? (
+                            <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+                                <span className="material-symbols-outlined text-4xl animate-spin text-primary">
+                                    progress_activity
+                                </span>
+                                <p className="text-sm font-medium">Fetching notifications...</p>
                             </div>
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-label font-bold uppercase tracking-[0.1em] text-secondary">
-                                        Session Invite
-                                    </span>
-                                    <span className="text-xs text-on-surface-variant/70">
-                                        2h ago
-                                    </span>
+                        ) : filteredNotifications.length === 0 ? (
+                            <div className="glass-panel p-12 rounded-3xl text-center border border-white/5 flex flex-col items-center justify-center my-6">
+                                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+                                    <BellOff className="w-8 h-8" />
                                 </div>
-                                <p className="font-body text-[15px] text-inverse-surface truncate">
-                                    <strong className="font-semibold text-white">
-                                        Jane Doe
-                                    </strong>{" "}
-                                    invited you to join an audio session:{" "}
-                                    <span className="italic text-on-surface">
-                                        "Indie Pop Hits"
-                                    </span>
+                                <h3 className="text-xl font-bold text-white mb-1 font-headline">No notifications yet</h3>
+                                <p className="text-slate-400 text-sm max-w-sm">
+                                    When artists release new songs, create playlists, or invite you to live sessions, updates will appear here!
                                 </p>
                             </div>
-                            {/* Action */}
-                            <div className="shrink-0 pl-2">
-                                <button className="px-6 py-2.5 rounded-full bg-linear-to-r from-primary to-primary-container text-on-primary font-label text-sm font-bold shadow-[0_0_15px_rgba(90,255,225,0.2)] hover:shadow-[0_0_25px_rgba(90,255,225,0.4)] transition-all transform hover:scale-105">
-                                    Join
-                                </button>
-                            </div>
-                        </div>
+                        ) : (
+                            filteredNotifications.map((item) => (
+                                <div
+                                    key={item._id}
+                                    onClick={() => handleMarkAsRead(item._id, item.actionUrl)}
+                                    className={`group relative flex items-center gap-4 sm:gap-6 p-4 sm:p-5 rounded-2xl backdrop-blur-lg border transition-all cursor-pointer ${
+                                        !item.isRead
+                                            ? "bg-surface-container-high/70 border-primary/30 shadow-lg shadow-primary/5"
+                                            : "bg-surface-container-high/30 border-white/5 hover:bg-surface-container-high/50"
+                                    }`}
+                                >
+                                    {/* Hover Glow */}
+                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl" />
 
-                        {/* Item 2: New Clip Alert (Coral Accent) */}
-                        <div className="group relative flex items-center gap-6 p-5 rounded-2xl bg-surface-container-high/40 backdrop-blur-lg border border-outline-variant/15 overflow-hidden transition-all hover:bg-surface-container-high/60">
-                            {/* Hover Glow Coral */}
-                            <div className="absolute inset-0 bg-linear-to-r from-tertiary-container/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                            {/* Album Art / Thumbnail */}
-                            <div className="relative w-20 h-14 shrink-0 rounded-lg overflow-hidden shadow-[0_0_20px_rgba(255,184,187,0.1)]">
-                                <img
-                                    alt="The Weeknd Clip"
-                                    className="w-full h-full object-cover"
-                                    data-alt="abstract neon light trails in deep red and coral colors over a pitch black void"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbztZY4EvqxTnQ_IFOmOELFYb0-5K6u7MjRJOsq4CRJW-LFUMjK1Wj5o8TI-lxRjozptKFY6PaC7sG3pxUj-p2cJxx1h4aZ46Os4FCPUBl4R1c6kIIM-blLB1qUSR5FI_v247uVxcxsgD4tsuNdlSIjkhzKBw0cjJyfGw3BzSOX5j7TbPZyQDpI2Ptl1OV3vECsy1KT-XbtyRPVd-lthmtdvnsFUXqNdnzCiUJKOwzFQ_KlgBQmP88dhHJepPONVvz9XNJYadrbbLo"
-                                />
-                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                    <span
-                                        className="material-symbols-outlined text-white text-xl"
-                                        style={{
-                                            fontVariationSettings: '"FILL" 1',
-                                        }}
-                                    >
-                                        play_arrow
-                                    </span>
-                                </div>
-                            </div>
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-label font-bold uppercase tracking-[0.1em] text-tertiary-container flex items-center gap-1">
-                                        <span
-                                            className="material-symbols-outlined text-[14px]"
-                                            style={{
-                                                fontVariationSettings:
-                                                    '"FILL" 1',
-                                            }}
+                                    {/* Sender Avatar / Icon */}
+                                    <div className="relative size-12 sm:size-14 shrink-0 rounded-full overflow-hidden bg-surface-container-highest border border-white/10 flex items-center justify-center">
+                                        {item.senderAvatar ? (
+                                            <img
+                                                src={item.senderAvatar}
+                                                alt={item.senderName || "Notification"}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = "none";
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-primary/10 text-primary flex items-center justify-center">
+                                                {item.type === "creator-update" ? (
+                                                    <Music className="w-6 h-6" />
+                                                ) : item.type === "invite" ? (
+                                                    <Volume2 className="w-6 h-6" />
+                                                ) : (
+                                                    <Sparkles className="w-6 h-6" />
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Unread Pill */}
+                                        {!item.isRead && (
+                                            <div className="absolute top-0 right-0 size-3 bg-primary rounded-full border-2 border-surface" />
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 flex flex-col gap-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-label font-bold uppercase tracking-[0.1em] text-primary">
+                                                {item.title}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">
+                                                {formatTimeAgo(item.createdAt)}
+                                            </span>
+                                        </div>
+                                        <p className="font-body text-sm sm:text-[15px] text-slate-200 line-clamp-2">
+                                            {item.message}
+                                        </p>
+                                    </div>
+
+                                    {/* Action Buttons & Trash */}
+                                    <div className="shrink-0 flex items-center gap-2 pl-2">
+                                        {item.actionLabel && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMarkAsRead(item._id, item.actionUrl);
+                                                }}
+                                                className="px-4 py-2 rounded-full bg-linear-to-r from-primary to-primary-container text-on-primary font-label text-xs font-bold shadow-md hover:scale-105 transition-all cursor-pointer"
+                                            >
+                                                {item.actionLabel}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={(e) => handleDelete(item._id, e)}
+                                            className="p-2 rounded-full text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer"
+                                            title="Delete notification"
                                         >
-                                            local_fire_department
-                                        </span>{" "}
-                                        Hot Drop
-                                    </span>
-                                    <span className="text-xs text-on-surface-variant/70">
-                                        4h ago
-                                    </span>
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <p className="font-body text-[15px] text-inverse-surface truncate">
-                                    Check out the latest exclusive clip from{" "}
-                                    <strong className="font-semibold text-white">
-                                        The Weeknd
-                                    </strong>
-                                </p>
-                            </div>
-                            {/* Action */}
-                            <div className="shrink-0 pl-2">
-                                <button className="px-6 py-2.5 rounded-full bg-surface-container-highest/80 text-inverse-surface font-label text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30">
-                                    View
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Item 3: Creator Update */}
-                        <div className="group relative flex items-center gap-6 p-5 rounded-2xl bg-surface-container-high/40 backdrop-blur-lg border border-outline-variant/15 overflow-hidden transition-all hover:bg-surface-container-high/60">
-                            <div className="absolute inset-0 bg-linear-to-r from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                            {/* Avatar */}
-                            <div className="relative size-14 shrink-0 rounded-full overflow-hidden">
-                                <img
-                                    alt="Creator Profile"
-                                    className="w-full h-full object-cover"
-                                    data-alt="silhouette of a dj at a concert with vibrant blue and purple stage lights"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA52DNB1pXoIpJweNaXtNhCtZ62xoZXRcZbFkSEbdfPS1mBVDmPGi367HCHnkaMt9bBqZYrYAZxWo1tibNANJNz9mkOeE4Py2VHfT33IbOUHQJUI0HRneFf4aSYZZMb5rxMgsowoeZfrntOMQqFI0paFaI-Jr1zVboIhVt3TtEax1I6Xq-dbqa2SJ0tQF9DeHI7fhDsNsEglvbG4-nUWUeZnR4Kaj03GDcedcAgSB14V0hxmyl9gR1aZa4MoiR7kEzjVwD_1d2aaxY_"
-                                />
-                            </div>
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-label font-bold uppercase tracking-[0.1em] text-secondary-fixed-dim">
-                                        Creator Update
-                                    </span>
-                                    <span className="text-xs text-on-surface-variant/70">
-                                        Yesterday
-                                    </span>
-                                </div>
-                                <p className="font-body text-[15px] text-inverse-surface truncate">
-                                    <strong className="font-semibold text-white">
-                                        DJ Horizon
-                                    </strong>{" "}
-                                    posted a new tour schedule for the upcoming
-                                    European leg.
-                                </p>
-                            </div>
-                            {/* Action */}
-                            <div className="shrink-0 pl-2">
-                                <button className="px-6 py-2.5 rounded-full bg-surface-container-highest/80 text-inverse-surface font-label text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30">
-                                    Read
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Item 4: Follower Alert */}
-                        <div className="group relative flex items-center gap-6 p-5 rounded-2xl bg-surface-container-high/40 backdrop-blur-lg border border-outline-variant/15 overflow-hidden transition-all hover:bg-surface-container-high/60">
-                            <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                            {/* Multi-Avatar (Simulated) */}
-                            <div className="relative size-14 shrink-0">
-                                <div className="absolute top-0 left-0 size-10 rounded-full border-2 border-surface-container-high overflow-hidden z-10">
-                                    <img
-                                        alt="Follower"
-                                        className="w-full h-full object-cover"
-                                        data-alt="close-up profile of a woman smiling with subtle cinematic teal lighting"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4w4pq8fskg0IuyfDB4ozMdmrJ1D4kXul534AMpppC1pyDTivFrQ9yGFWYSgB9ICf3rzxaQgWg6ileBMnqJAB6_t-fZEvgHTB6jPi9BTtoBf_EfbzSkVa_AZgGUY34CEIPE8cAvdDQBGbkxBJ-wd-_gwafUMBiDixnjAxpm2PJmEDXWyLYUh9JmGZLJf1nSn2D4G6g0Xtm0ZzQDwXz2aKjDE6LMuShSUzJb4lF6Z5qFDMbtHktN8_i0luE3KwDorocnT4zUoy5ZEM9"
-                                    />
-                                </div>
-                                <div className="absolute bottom-0 right-0 size-10 rounded-full border-2 border-surface-container-high overflow-hidden bg-surface-variant flex items-center justify-center">
-                                    <span className="text-xs font-bold text-on-surface-variant">
-                                        +3
-                                    </span>
-                                </div>
-                            </div>
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-label font-bold uppercase tracking-[0.1em] text-on-surface-variant">
-                                        Network
-                                    </span>
-                                    <span className="text-xs text-on-surface-variant/70">
-                                        2d ago
-                                    </span>
-                                </div>
-                                <p className="font-body text-[15px] text-inverse-surface truncate">
-                                    <strong className="font-semibold text-white">
-                                        Alex M.
-                                    </strong>{" "}
-                                    and 3 others started following your
-                                    "Midnight Drive" playlist.
-                                </p>
-                            </div>
-                        </div>
+                            ))
+                        )}
                     </section>
                 </main>
             </div>

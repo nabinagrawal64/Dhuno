@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth.routes";
 import playlistRoutes from "./routes/playlist.routes";
 import roomRoutes from "./routes/room.routes";
 import songRoutes from "./routes/song.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 dotenv.config();
 connectDB();
@@ -41,12 +42,22 @@ app.use("/api/auth", authRoutes);
 app.use("/api/playlists", playlistRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/songs", songRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).json({
         success: true,
         message: "🎧 Dhuno API is running...",
     });
+});
+
+server.on("error", (error: any) => {
+    if (error.code === "EADDRINUSE") {
+        console.error(`❌ Port ${PORT} is already in use. Please free port ${PORT} or restart the backend.`);
+        process.exit(1);
+    } else {
+        console.error("Server error:", error);
+    }
 });
 
 server.listen(PORT, () => {

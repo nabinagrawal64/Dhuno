@@ -6,6 +6,7 @@ import { z } from "zod";
 import User from "../models/user.model";
 import Artist from "../models/artist.model";
 import Song from "../models/song.model";
+import Room from "../models/room.model";
 import mongoose from "mongoose";
 import { sendResetOTP, send2FAOTP, sendPasswordChangedEmail } from "../utils/email";
 
@@ -355,6 +356,18 @@ export const getMe = async ( req: AuthRequest, res: Response ): Promise<void> =>
         let totalSongs = 0;
         if (user.role === 'artist') {
             totalSongs = await Song.countDocuments({ uploadedBy: user._id });
+        }
+
+        // Clean up joinedRooms to only count rooms that actually exist in the database
+        if (Array.isArray(user.joinedRooms) && user.joinedRooms.length > 0) {
+            const existingRooms = await Room.find({ _id: { $in: user.joinedRooms } }).select("_id");
+            const existingIds = new Set(existingRooms.map((r) => r._id.toString()));
+            const originalLength = user.joinedRooms.length;
+            user.joinedRooms = user.joinedRooms.filter((roomId) => existingIds.has(String(roomId)));
+
+            if (user.joinedRooms.length !== originalLength) {
+                await user.save();
+            }
         }
 
         const userObj = user.toObject();
