@@ -7,6 +7,7 @@ import Room from "../models/room.model";
 import Song from "../models/song.model";
 import { redisDelete, redisGetJson, redisSetAdd, redisSetJson, redisSetRemove } from "../utils/redis-cache";
 import { cleanupRoomPresence, loadRoomQueueSnapshot, registerRoomState, removeRoomPresence, syncRoomQueueSnapshot, touchRoomPresence } from "../utils/redis-room-state";
+import socketEvents from "../utils/socket-events";
 
 // ──────────────────────────────────────────────
 // Types
@@ -71,6 +72,18 @@ const roomPresenceTimers = new Map<string, NodeJS.Timeout>();
 const presenceTimerKey = (roomId: string, socketId: string) => `${roomId}:${socketId}`;
 
 const getRoomState = (roomId: string): RoomState | undefined => rooms.get(roomId);
+export { getRoomState };
+
+export const updateRoomQueueState = (roomId: string, queue: RoomState["queue"]) => {
+    const state = rooms.get(roomId);
+    if (state) {
+        state.queue = queue;
+    }
+};
+
+// Exported singleton reference to socket.io instance (set after initializeSocket)
+let ioInstance: SocketIOServer | null = null;
+export const getSocketIO = () => ioInstance;
 
 const ensureRoomState = async (roomId: string, hostId: string, socketId: string): Promise<RoomState> => {
     let state = rooms.get(roomId);
@@ -250,13 +263,19 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
 
     const io = new SocketIOServer(server, {
         cors: {
-            origin: allowedOrigins, // Restore specific origins for credentials support
+            origin: allowedOrigins,
             methods: ["GET", "POST"],
             credentials: true,
         },
-        transports: ['websocket', 'polling'], // Allow fallback for stability
-        pingTimeout: 60000, // Increase timeouts
+        transports: ['websocket', 'polling'],
+        pingTimeout: 60000,
         pingInterval: 25000,
+    });
+    ioInstance = io;
+
+    // Listen for queue broadcast requests from REST controllers (avoids circular imports)
+    socketEvents.on("room_queue_updated", (payload: { roomId: string; queue: any[] }) => {
+        io.to(payload.roomId).emit("room_queue_updated", payload);
     });
 
     const cleanupTimer = setInterval(() => {
@@ -561,12 +580,18 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
             void persistRoomState(payload.roomId, state);
         });
 
-        socket.on("room_next", async (payload: { roomId: string }) => {
+        socket.on("room_next", async (payload: { roomId: string; isAuto?: boolean; finishedTrackId?: string }) => {
             if (!payload?.roomId) return;
             const uid = (socket as any).userId;
             const state = getRoomState(payload.roomId);
             if (!state || !uid) return;
-            if (!canControlPlayback(state, uid)) {
+
+            // Prevent duplicate auto-skips for the same finished track
+            if (payload.isAuto && payload.finishedTrackId && state.currentSong?.trackId && state.currentSong.trackId !== payload.finishedTrackId) {
+                return;
+            }
+
+            if (!payload.isAuto && !canControlPlayback(state, uid)) {
                 socket.emit("room_error", { message: "Only the host or DJ can skip tracks" });
                 return;
             }
@@ -604,13 +629,8 @@ export const initializeSocket = (server: HttpServer, allowedOrigins: string[]) =
                     roomId: payload.roomId,
                     currentSong: state.currentSong,
                     queue: state.queue,
-                });
-
-                io.to(payload.roomId).emit("room_play", {
-                    roomId: payload.roomId,
-                    at: 0,
-                    currentSong: state.currentSong,
                     startTime: state.startTime,
+                    at: 0
                 });
 
                 // Persist skip state

@@ -152,6 +152,11 @@ export const roomService = {
             body: JSON.stringify(payload),
         }) as Promise<{ success: boolean; queue: RoomDetail["queue"] }>;
     },
+    removeTrackFromQueue: async (roomId: string, index: number) => {
+        return apiClient(`/rooms/${roomId}/queue/${index}`, {
+            method: "DELETE",
+        }) as Promise<{ success: boolean; queue: RoomDetail["queue"] }>;
+    },
     syncPlayback: async (
         roomId: string,
         payload: {

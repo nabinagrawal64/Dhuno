@@ -29,6 +29,14 @@ export interface PlayerPlaylist {
     totalTracks?: number;
 }
 
+export interface CustomPlayerControls {
+    onPlay?: () => void;
+    onPause?: () => void;
+    onSeek?: (time: number) => void;
+    onSkipNext?: () => void;
+    onSkipPrev?: () => void;
+}
+
 interface PlayerContextType {
     currentSong: PlayerSong | null;
     isPlaying: boolean;
@@ -41,14 +49,14 @@ interface PlayerContextType {
     downloadingIds: string[];
     playlists: PlayerPlaylist[];
     isCurrentSongLiked: boolean;
-    playSong: (song: PlayerSong, startTime?: number) => void;
+    playSong: (song: PlayerSong, startTime?: number, force?: boolean, startPaused?: boolean) => void;
     togglePlay: () => void;
-    seek: (time: number) => void;
+    seek: (time: number, force?: boolean) => void;
     setVolume: (vol: number) => void;
     skipNext: () => void;
     skipPrev: () => void;
-    play: () => void;
-    pause: () => void;
+    play: (force?: boolean) => void;
+    pause: (force?: boolean) => void;
     toggleLikeCurrentSong: () => void;
     downloadSong: (song: PlayerSong) => Promise<void>;
     removeDownload: (songId: string) => Promise<void>;
@@ -60,6 +68,9 @@ interface PlayerContextType {
     audioRef: React.RefObject<HTMLAudioElement>;
     isRemoteControlled: boolean;
     setIsRemoteControlled: (val: boolean) => void;
+    requiresInteraction: boolean;
+    setRequiresInteraction: (val: boolean) => void;
+    setCustomControls: (controls: CustomPlayerControls | null) => void;
 }
 
 interface StoredPlayerState {
@@ -212,6 +223,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const [downloadingIds, setDownloadingIds] = useState<string[]>([]);
     const [playlists, setPlaylists] = useState<PlayerPlaylist[]>(() => readStoredPlaylists());
     const [isRemoteControlled, setIsRemoteControlled] = useState(false);
+    const [requiresInteraction, setRequiresInteraction] = useState(false);
+    const customControlsRef = useRef<CustomPlayerControls | null>(null);
+
+    const setCustomControls = useCallback((controls: CustomPlayerControls | null) => {
+        customControlsRef.current = controls;
+    }, []);
 
     const isCurrentSongLiked = currentSong ? likedSongs.some(song => song._id === currentSong._id) : false;
 
@@ -341,7 +358,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setRecentSongs(prev => [song, ...prev.filter(item => item._id !== song._id)].slice(0, 12));
     }, []);
 
-    const playSong = useCallback(async (song: PlayerSong, startTime: number = 0) => {
+    const playSong = useCallback(async (song: PlayerSong, startTime: number = 0, force: boolean = false, startPaused: boolean = false) => {
+        if (isRemoteControlled && !force) return;
         const audio = audioRef.current;
         if (!audio) return;
 
@@ -368,33 +386,78 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             audio.addEventListener('canplay', onCanPlay);
         }
 
-        audio.play().catch(console.error);
+        if (startPaused) {
+            audio.pause();
+            setIsPlaying(false);
+            setCurrentSong(song);
+            setCurrentTime(startTime);
+            addToRecentSongs(song);
+            return;
+        }
+
+        audio.play()
+            .then(() => setRequiresInteraction(false))
+            .catch(err => {
+                if (err.name === 'NotAllowedError') {
+                    setRequiresInteraction(true);
+                }
+                console.error(err);
+            });
+            
         setCurrentSong(song);
         setCurrentTime(startTime);
         addToRecentSongs(song);
-    }, [addToRecentSongs]);
+    }, [addToRecentSongs, isRemoteControlled]);
 
-    const togglePlay = useCallback(() => {
-        const audio = audioRef.current;
-        if (!audio || !currentSong) return;
-        if (audio.paused) {
-            audio.play().catch(console.error);
-        } else {
-            audio.pause();
-        }
-    }, [currentSong]);
-
-    const play = useCallback(() => {
+    const play = useCallback((force: boolean = false) => {
+        if (isRemoteControlled && !force) return;
         const audio = audioRef.current;
         if (!audio) return;
-        audio.play().catch(console.error);
-    }, []);
+        audio.play()
+            .then(() => setRequiresInteraction(false))
+            .catch(err => {
+                if (err.name === 'NotAllowedError') {
+                    setRequiresInteraction(true);
+                }
+                console.error(err);
+            });
+    }, [isRemoteControlled]);
 
-    const pause = useCallback(() => {
+    const pause = useCallback((force: boolean = false) => {
+        if (isRemoteControlled && !force) return;
         const audio = audioRef.current;
         if (!audio) return;
         audio.pause();
-    }, []);
+    }, [isRemoteControlled]);
+
+    const togglePlay = useCallback(() => {
+        if (isRemoteControlled) return;
+        if (customControlsRef.current) {
+            const audio = audioRef.current;
+            if (audio?.paused) {
+                if (customControlsRef.current.onPlay) customControlsRef.current.onPlay();
+                else play();
+            } else {
+                if (customControlsRef.current.onPause) customControlsRef.current.onPause();
+                else pause();
+            }
+            return;
+        }
+        const audio = audioRef.current;
+        if (!audio || !currentSong) return;
+        if (audio.paused) {
+            audio.play()
+                .then(() => setRequiresInteraction(false))
+                .catch(err => {
+                    if (err.name === 'NotAllowedError') {
+                        setRequiresInteraction(true);
+                    }
+                    console.error(err);
+                });
+        } else {
+            audio.pause();
+        }
+    }, [currentSong, isRemoteControlled, pause, play]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -410,12 +473,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [togglePlay]);
 
-    const seek = useCallback((time: number) => {
+    const seek = useCallback((time: number, force: boolean = false) => {
+        if (isRemoteControlled && !force) return;
+        if (customControlsRef.current?.onSeek && !force) {
+            customControlsRef.current.onSeek(time);
+            return;
+        }
         const audio = audioRef.current;
         if (!audio) return;
         audio.currentTime = time;
         setCurrentTime(time);
-    }, []);
+    }, [isRemoteControlled]);
 
     const setVolume = useCallback((vol: number) => {
         const audio = audioRef.current;
@@ -425,13 +493,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const skipNext = useCallback(() => {
+        if (isRemoteControlled) return;
+        if (customControlsRef.current?.onSkipNext) {
+            customControlsRef.current.onSkipNext();
+            return;
+        }
         if (!currentSong || queue.length === 0) return;
         const idx = queue.findIndex(s => s._id === currentSong._id);
         const next = queue[idx + 1];
         if (next) playSong(next);
-    }, [currentSong, queue, playSong]);
+    }, [currentSong, queue, playSong, isRemoteControlled]);
 
     const skipPrev = useCallback(() => {
+        if (isRemoteControlled) return;
+        if (customControlsRef.current?.onSkipPrev) {
+            customControlsRef.current.onSkipPrev();
+            return;
+        }
         const audio = audioRef.current;
         if (!audio) return;
         // If more than 3s in, restart; otherwise go prev
@@ -443,7 +521,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         const idx = queue.findIndex(s => s._id === currentSong._id);
         const prev = queue[idx - 1];
         if (prev) playSong(prev);
-    }, [currentSong, queue, playSong, seek]);
+    }, [currentSong, queue, playSong, seek, isRemoteControlled]);
 
     const toggleLikeCurrentSong = useCallback(() => {
         if (!currentSong) return;
@@ -531,14 +609,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         skipNext, skipPrev, toggleLikeCurrentSong, downloadSong, removeDownload, isSongDownloaded,
         createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
         play, pause, audioRef: audioRef as React.RefObject<HTMLAudioElement>,
-        isRemoteControlled, setIsRemoteControlled
+        isRemoteControlled, setIsRemoteControlled,
+        requiresInteraction, setRequiresInteraction,
+        setCustomControls
     }), [
         currentSong, isPlaying, currentTime, duration, volume,
         likedSongs, recentSongs, downloadedSongs, downloadingIds, playlists, isCurrentSongLiked,
         playSong, togglePlay, seek, setVolume,
         skipNext, skipPrev, toggleLikeCurrentSong, downloadSong, removeDownload, isSongDownloaded,
         createPlaylistWithCurrentSong, addCurrentSongToPlaylist, queue, setQueue,
-        play, pause, isRemoteControlled
+        play, pause, isRemoteControlled, requiresInteraction,
+        setCustomControls
     ]);
 
     return (

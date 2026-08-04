@@ -6,6 +6,8 @@ import User from "../models/user.model";
 import { AuthRequest } from "../types/request.types";
 import { redisDelete, redisGetJson, redisHashSet, redisSetJson } from "../utils/redis-cache";
 import { clearRoomState, registerRoomState, syncRoomQueueSnapshot } from "../utils/redis-room-state";
+import { updateRoomQueueState } from "../sockets/socket";
+import socketEvents from "../utils/socket-events";
 
 type RoomPreview = {
     _id: string;
@@ -415,6 +417,8 @@ export const sendRoomMessage = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
+        const senderUser = await User.findById(req.user).select("fullName username avatar role").lean();
+
         room.recentMessages.unshift({
             sender: new Types.ObjectId(String(req.user)),
             text,
@@ -426,9 +430,15 @@ export const sendRoomMessage = async (req: AuthRequest, res: Response): Promise<
         const payload = {
             roomId: String(room._id),
             message: {
-                sender: String(req.user),
+                sender: senderUser ? {
+                    _id: String(senderUser._id),
+                    fullName: senderUser.fullName || senderUser.username || "Listener",
+                    username: senderUser.username || "listener",
+                    avatar: senderUser.avatar || "",
+                    role: senderUser.role || "user",
+                } : null,
                 text,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
             },
         };
 
@@ -480,16 +490,36 @@ export const addTrackToQueue = async (req: AuthRequest, res: Response): Promise<
         });
         await room.save();
 
-        (req as any).io?.to(String(room._id)).emit("room_queue_updated", {
+        const normalizedQueue = room.queue.map((q: any) => ({
+            trackId: String(q.trackId),
+            title: String(q.title),
+            artist: String(q.artist || ""),
+            artwork: String(q.artwork || ""),
+            audioUrl: String(q.audioUrl || ""),
+        }));
+
+        // Update in-memory socket state
+        updateRoomQueueState(String(room._id), normalizedQueue.map((q: any) => ({ ...q, lyrics: "", addedBy: "" })));
+
+        // Broadcast instantly via socket (via event bus to avoid circular imports)
+        socketEvents.emit("room_queue_updated", {
             roomId: String(room._id),
-            queue: room.queue,
+            queue: normalizedQueue,
         });
+
 
         await invalidateRoomCache(String(room._id));
         await refreshRoomStateCache(String(room._id), room);
         await syncRoomQueueSnapshot(String(room._id), room.queue || []);
 
-        res.status(200).json({ success: true, queue: room.queue });
+        // Return the normalized queue (matching socket state format) instead of raw Mongoose docs
+        res.status(200).json({ success: true, queue: room.queue.map(q => ({
+            trackId: String(q.trackId),
+            title: String(q.title),
+            artist: String((q as any).artist || ""),
+            artwork: String((q as any).artwork || ""),
+            audioUrl: String((q as any).audioUrl || ""),
+        })) });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: "Failed to update queue" });
@@ -682,11 +712,27 @@ export const removeFromQueue = async (req: AuthRequest, res: Response): Promise<
         room.queue.splice(index, 1);
         await room.save();
 
-        await invalidateRoomCache(String(room._id));
-        await clearRoomState(String(room._id));
-        await refreshRoomStateCache(String(room._id), room);
+        const removedNormalizedQueue = room.queue.map((q: any) => ({
+            trackId: String(q.trackId),
+            title: String(q.title),
+            artist: String(q.artist || ""),
+            artwork: String(q.artwork || ""),
+            audioUrl: String(q.audioUrl || ""),
+        }));
 
-        res.status(200).json({ success: true, queue: room.queue });
+        updateRoomQueueState(String(room._id), removedNormalizedQueue.map((q: any) => ({ ...q, lyrics: "", addedBy: "" })));
+
+        await invalidateRoomCache(String(room._id));
+        await refreshRoomStateCache(String(room._id), room);
+        await syncRoomQueueSnapshot(String(room._id), room.queue || []);
+
+        // Broadcast instantly via socket (via event bus to avoid circular imports)
+        socketEvents.emit("room_queue_updated", {
+            roomId: String(room._id),
+            queue: removedNormalizedQueue,
+        });
+
+        res.status(200).json({ success: true, queue: removedNormalizedQueue });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: "Failed to remove from queue" });
