@@ -8,7 +8,6 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "build": "tsc",
     "lint": "eslint \"src/**/*.{ts,mts,cts}\"",
-    "prestart": "npm run build",
     "start": "node dist/server.js"
   },
   "keywords": [
