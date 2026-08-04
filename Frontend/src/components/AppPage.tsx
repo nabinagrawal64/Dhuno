@@ -294,7 +294,7 @@ export default function AppPage({ children }: { children: ReactNode }) {
                                 }
                                 .desktop-shell.route-live-room main {
                                     margin-top: 0 !important;
-                                    padding: 2rem 2rem 10rem 2rem !important;
+                                    padding: 2rem 2rem 8rem 2rem !important;
                                     height: 100vh !important;
                                     overflow-y: auto !important;
                                     box-sizing: border-box !important;

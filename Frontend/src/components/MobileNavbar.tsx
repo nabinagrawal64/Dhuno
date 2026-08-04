@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 export default function MobileNavbar() {
     const location = useLocation();
+    const isRoomLivePage = location.pathname.startsWith('/rooms/live');
     
     const getTabClass = (path: string) => {
         const isActive = location.pathname.startsWith(path);
@@ -13,7 +14,7 @@ export default function MobileNavbar() {
 
     return (
         <div className="lg:hidden">
-            <nav className="fixed bottom-0 left-0 w-full bg-surface-container flex justify-around items-center pt-3 pb-2.5 px-4 rounded-t-4xl z-50 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+            <nav className={`fixed bottom-0 left-0 w-full bg-surface-container flex justify-around items-center pt-3 ${isRoomLivePage ? 'pb-4.5' : 'pb-2.5'} px-4 rounded-t-4xl z-50 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]`}>
                 <Link to="/home" className={getTabClass('/home')}>
                     <span className={`material-symbols-outlined text-2xl group-active:scale-90 duration-300 ${location.pathname.startsWith('/home') ? 'text-primary' : ''}`}>home</span>
                     <span className="font-manrope text-[10px] uppercase tracking-widest mt-1">Home</span>

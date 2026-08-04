@@ -693,7 +693,7 @@ export default function LiveSessionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary/30 w-full pb-32">
+        <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary/30 w-full pb-48 lg:pb-32">
             {/* Auto-play Blocked Overlay */}
             {player.requiresInteraction && (
                 <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
@@ -1309,7 +1309,6 @@ export default function LiveSessionPage() {
                             )}
                         </div>
                     </div>
-
                 </div>
             </main>
         </div>
