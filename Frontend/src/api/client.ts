@@ -13,9 +13,12 @@ export const apiClient = async (
     const isLoginEndpoint = endpoint === "/auth/login" || endpoint === "/auth/google";
     
     const headers: Record<string, string> = {
-        "Content-Type": "application/json",
         ...((options.headers as Record<string, string>) || {}),
     };
+
+    if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+    }
 
     // Get token and add to Authorization header if it exists
     const token = authUtils.getToken();

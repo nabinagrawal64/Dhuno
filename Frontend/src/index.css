@@ -171,3 +171,19 @@
 		box-shadow: 0 0 40px color-mix(in srgb, var(--color-primary) 12%, transparent);
 	}
 }
+
+@keyframes pitchBounce1 {
+	0%, 100% { transform: scaleY(0.3); }
+	50% { transform: scaleY(1.0); }
+}
+
+@keyframes pitchBounce2 {
+	0%, 100% { transform: scaleY(0.95); }
+	50% { transform: scaleY(0.25); }
+}
+
+@keyframes pitchBounce3 {
+	0%, 100% { transform: scaleY(0.4); }
+	35% { transform: scaleY(1.0); }
+	70% { transform: scaleY(0.3); }
+}

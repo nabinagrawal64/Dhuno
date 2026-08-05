@@ -9,6 +9,31 @@ import Song from "../models/song.model";
 import Room from "../models/room.model";
 import mongoose from "mongoose";
 import { sendResetOTP, send2FAOTP, sendPasswordChangedEmail } from "../utils/email";
+import cloudinary from "../config/cloudinary";
+import { Readable } from "stream";
+
+const uploadToCloudinary = (
+    buffer: Buffer,
+    folder: string,
+    resourceType: "image" | "video" = "image"
+): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                folder,
+                resource_type: resourceType,
+            },
+            (error, result) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                resolve(result);
+            }
+        );
+        Readable.from(buffer).pipe(stream);
+    });
+};
 
 // VALIDATION SCHEMAS
 const signupSchema = z.object({
@@ -370,10 +395,8 @@ export const getMe = async ( req: AuthRequest, res: Response ): Promise<void> =>
             }
         }
 
-        const userObj = user.toObject();
-        if (user.role === 'artist') {
-            (userObj as any).totalSongs = totalSongs;
-        }
+        const userObj = user.toObject() as any;
+        userObj.totalSongs = totalSongs;
 
         res.status(200).json({
             success: true,
@@ -388,6 +411,47 @@ export const getMe = async ( req: AuthRequest, res: Response ): Promise<void> =>
     }
 };
 
+// GET USER BY USERNAME
+export const getUserByUsername = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { username } = req.params;
+        if (!username) {
+            res.status(400).json({ success: false, message: "Username is required" });
+            return;
+        }
+
+        const targetUsername = Array.isArray(username) ? username[0] : username;
+        const user = await User.findOne({ username: targetUsername.toLowerCase() });
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+            return;
+        }
+
+        let totalSongs = 0;
+        if (user.role === "artist") {
+            totalSongs = await Song.countDocuments({ uploadedBy: user._id });
+        }
+
+        const userObj = user.toObject() as any;
+        userObj.totalSongs = totalSongs;
+
+        res.status(200).json({
+            success: true,
+            user: userObj,
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch user profile",
+        });
+    }
+};
+
 // UPDATE CURRENT USER PROFILE
 export const updateMe = async ( req: AuthRequest, res: Response ): Promise<void> => {
     try {
@@ -397,6 +461,18 @@ export const updateMe = async ( req: AuthRequest, res: Response ): Promise<void>
                 message: "Not authorized",
             });
             return;
+        }
+
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+        if (files?.avatar?.[0]) {
+            const uploadedAvatar = await uploadToCloudinary(files.avatar[0].buffer, "dhuno/avatars", "image");
+            req.body.avatar = uploadedAvatar.secure_url;
+        }
+
+        if (files?.bannerImage?.[0]) {
+            const uploadedBanner = await uploadToCloudinary(files.bannerImage[0].buffer, "dhuno/banners", "image");
+            req.body.bannerImage = uploadedBanner.secure_url;
         }
 
         const parsed = updateProfileSchema.safeParse(req.body);

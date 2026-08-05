@@ -133,10 +133,16 @@ export const authService = {
             method: "GET",
         }) as Promise<{ success: boolean; user: UserProfile }>;
     },
-    updateMe: async (data: UpdateProfileData) => {
+    getProfileByUsername: async (username: string) => {
+        return apiClient(`/auth/user/${username}`, {
+            method: "GET",
+        }) as Promise<{ success: boolean; user: UserProfile }>;
+    },
+    updateMe: async (data: UpdateProfileData | FormData) => {
+        const body = data instanceof FormData ? data : JSON.stringify(data);
         return apiClient("/auth/me", {
             method: "PUT",
-            body: JSON.stringify(data),
+            body,
         }) as Promise<{ success: boolean; message: string; user: UserProfile }>;
     },
     deleteMe: async () => {

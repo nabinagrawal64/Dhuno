@@ -80,6 +80,7 @@ function App() {
                 <Route path="/library/recently-played" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><RecentlyPlayedPage /></AppPage></ProtectedRoute>} />
                 <Route path="/library/playlist/:id" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><PlaylistDetailsPage /></AppPage></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><ProfilePage /></AppPage></ProtectedRoute>} />
+                <Route path="/profile/:username" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><ProfilePage /></AppPage></ProtectedRoute>} />
                 <Route path="/rooms/discovery" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><RoomDiscoveryPage /></AppPage></ProtectedRoute>} />
                 <Route path="/rooms/create" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><CreateRoomPage /></AppPage></ProtectedRoute>} />
                 <Route path="/rooms/live" element={<ProtectedRoute allowedRoles={["user", "artist", "admin"]}><AppPage><LiveSessionPage /></AppPage></ProtectedRoute>} />

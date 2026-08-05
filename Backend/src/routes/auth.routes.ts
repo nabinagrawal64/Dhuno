@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request } from "express";
-import { signup, login, googleAuth, getMe, updateMe, deleteMe, logout, forgotPassword, verifyResetCode, resetPassword, changePassword, verify2FALogin, requestEnable2FA, verifyEnable2FA, disable2FA } from "../controllers/auth.controller";
+import { signup, login, googleAuth, getMe, getUserByUsername, updateMe, deleteMe, logout, forgotPassword, verifyResetCode, resetPassword, changePassword, verify2FALogin, requestEnable2FA, verifyEnable2FA, disable2FA } from "../controllers/auth.controller";
 import { protect } from "../middleware/auth.middleware";
 import { createRedisRateLimitStore } from "../utils/redis-rate-limit-store";
 const createLimiter = (prefix: string, windowMs: number, max: number, keyGenerator: (req: Request) => string, message: string) => {
@@ -53,12 +53,23 @@ const forgotPasswordLimiter = createLimiter("rl:forgot-password", 60 * 60 * 1000
 // VERIFY CODE / RESET PASSWORD — prevents code guessing (5 / 15 min)
 const resetLimiter = createLimiter("rl:reset", 15 * 60 * 1000, 5, keyByUserIdentifier("email"), "Too many attempts. Please try again after 15 minutes.");
 
+import upload from "../middleware/upload.middleware";
+
 // Authentication
 router.post("/signup", signupLimiter, signup);
 router.post("/login", loginLimiter, login);
 router.post("/google", googleLimiter, googleAuth);
 router.get("/me", protect, getMe);
-router.put("/me", protect, updateMe);
+router.get("/user/:username", getUserByUsername);
+router.put(
+    "/me",
+    protect,
+    upload.fields([
+        { name: "avatar", maxCount: 1 },
+        { name: "bannerImage", maxCount: 1 },
+    ]),
+    updateMe
+);
 router.delete("/me", protect, deleteMe);
 router.post("/logout", protect, logout);
 router.post("/change-password", protect, changePassword);
