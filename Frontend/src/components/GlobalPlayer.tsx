@@ -558,11 +558,12 @@ export default function GlobalPlayer() {
                         <div className="relative w-10 h-10 flex items-center justify-center">
                             <button
                                 type="button"
-                                // onClick={(e) => {
-                                //     e.stopPropagation();
-                                //     setIsActionMenuOpen((prev) => !prev);
-                                // }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsActionMenuOpen((prev) => !prev);
+                                }}
                                 className="text-slate-300 hover:text-white cursor-pointer p-2"
+                                aria-label="More actions"
                             >
                                 <EllipsisVertical className="w-6 h-6" />
                             </button>

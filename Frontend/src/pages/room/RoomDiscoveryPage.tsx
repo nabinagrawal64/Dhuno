@@ -4,12 +4,12 @@ import toast from "react-hot-toast";
 import { roomService, type RoomPreview } from "../../api/room.service";
 import { authUtils } from "../../utils/auth";
 
-const categoryLabels = ["all", "public", "private", "friends"] as const;
+type RoomCategory = "all" | "public" | "private" | "friends";
 
 export default function RoomDiscoveryPage() {
     const navigate = useNavigate();
     const [rooms, setRooms] = useState<RoomPreview[]>([]);
-    const [activeCategory] = useState<(typeof categoryLabels)[number]>("all");
+    const [activeCategory] = useState<RoomCategory>("all");
     const [isLoading, setIsLoading] = useState(true);
     const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
     const [myId, setMyId] = useState("");
@@ -18,7 +18,9 @@ export default function RoomDiscoveryPage() {
         try {
             const t = authUtils.getToken();
             if (t) { const p = JSON.parse(atob(t.split(".")[1])); if (p.id) setMyId(p.id); }
-        } catch { }
+        } catch {
+            setMyId("");
+        }
     }, []);
 
     const loadRooms = async (lat?: number, lng?: number) => {

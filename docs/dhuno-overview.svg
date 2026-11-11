@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 920" width="1600" height="920" font-family="Inter, 'Segoe UI', Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#171034"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+    <style>
+      .card { fill: #131a33; stroke: #26305a; stroke-width: 1.5; }
+      .cardTitle { font-size: 24px; font-weight: 700; fill: #ffffff; }
+      .pitch { font-size: 15px; fill: #94a3b8; }
+      .item { font-size: 16px; fill: #e2e8f0; }
+      .section { font-size: 13px; font-weight: 700; letter-spacing: 2px; fill: #22d3ee; }
+      .stepTitle { font-size: 18px; font-weight: 700; fill: #ffffff; }
+      .stepText { font-size: 13.5px; fill: #cbd5e1; }
+      .pillText { font-size: 13px; font-weight: 600; fill: #e2e8f0; text-anchor: middle; }
+      .layerTitle { font-size: 15px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+      .layerSub { font-size: 12px; fill: #94a3b8; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="920" fill="url(#bg)"/>
+
+  <!-- HEADER -->
+  <text x="65" y="92" font-size="68" font-weight="800" fill="url(#brand)">Dhuno</text>
+  <text x="65" y="132" font-size="24" fill="#e2e8f0">Music you stream alone, or share live with friends.</text>
+  <text x="1535" y="92" font-size="15" fill="#94a3b8" text-anchor="end">Streaming + synchronized listening rooms</text>
+  <text x="1535" y="114" font-size="15" fill="#94a3b8" text-anchor="end">for listeners and artists</text>
+
+  <!-- THREE PILLARS -->
+  <rect x="65" y="165" width="470" height="255" rx="18" class="card"/>
+  <circle cx="105" cy="205" r="20" fill="#0e7490"/>
+  <path d="M97 215 V196 L117 192 V211" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="97" cy="215" r="4" fill="#ffffff"/><circle cx="117" cy="211" r="4" fill="#ffffff"/>
+  <text x="140" y="213" class="cardTitle">Stream your way</text>
+  <text x="90" y="262" class="item">• Fast song and artist search</text>
+  <text x="90" y="292" class="item">• Playlists, likes, recently played</text>
+  <text x="90" y="322" class="item">• Download songs to play offline</text>
+  <text x="90" y="352" class="item">• Pick a theme that fits your mood</text>
+  <text x="90" y="392" class="pitch">For everyday listeners</text>
+
+  <rect x="565" y="165" width="470" height="255" rx="18" class="card" stroke="#7c3aed" stroke-width="2"/>
+  <circle cx="605" cy="205" r="20" fill="#6d28d9"/>
+  <circle cx="598" cy="203" r="6" fill="#ffffff"/><circle cx="614" cy="203" r="6" fill="#ffffff"/>
+  <path d="M590 220 Q598 211 606 220 M606 220 Q614 211 622 220" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <text x="640" y="213" class="cardTitle">Listen together</text>
+  <text x="590" y="262" class="item">• Live rooms with synced playback</text>
+  <text x="590" y="292" class="item">• Chat and emoji reactions</text>
+  <text x="590" y="322" class="item">• Shared queue, vote to skip</text>
+  <text x="590" y="352" class="item">• Host or DJ controls the music</text>
+  <text x="590" y="392" class="pitch">The signature feature</text>
+
+  <rect x="1065" y="165" width="470" height="255" rx="18" class="card"/>
+  <circle cx="1105" cy="205" r="20" fill="#be185d"/>
+  <rect x="1098" y="192" width="14" height="22" rx="7" fill="#ffffff"/>
+  <path d="M1094 208 Q1094 223 1105 223 Q1116 223 1116 208 M1105 223 V229" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <text x="1140" y="213" class="cardTitle">Built for artists</text>
+  <text x="1090" y="262" class="item">• Upload songs and short clips</text>
+  <text x="1090" y="292" class="item">• Dashboard and analytics</text>
+  <text x="1090" y="322" class="item">• Create and manage playlists</text>
+  <text x="1090" y="352" class="item">• Your whole catalog in one place</text>
+  <text x="1090" y="392" class="pitch">For creators</text>
+
+  <!-- LIVE ROOM FLOW -->
+  <text x="65" y="458" class="section">HOW A LIVE ROOM WORKS</text>
+
+  <g>
+    <rect x="65" y="475" width="250" height="125" rx="14" class="card"/>
+    <circle cx="95" cy="505" r="14" fill="#22d3ee"/><text x="95" y="510" font-size="14" font-weight="800" fill="#0b1020" text-anchor="middle">1</text>
+    <text x="120" y="511" class="stepTitle">Create</text>
+    <text x="85" y="545" class="stepText">Host opens a room and</text>
+    <text x="85" y="565" class="stepText">sets chat and queue rules</text>
+
+    <rect x="370" y="475" width="250" height="125" rx="14" class="card"/>
+    <circle cx="400" cy="505" r="14" fill="#22d3ee"/><text x="400" y="510" font-size="14" font-weight="800" fill="#0b1020" text-anchor="middle">2</text>
+    <text x="425" y="511" class="stepTitle">Join</text>
+    <text x="390" y="545" class="stepText">Friends find it in room</text>
+    <text x="390" y="565" class="stepText">discovery and hop in</text>
+
+    <rect x="675" y="475" width="250" height="125" rx="14" class="card" stroke="#7c3aed" stroke-width="2"/>
+    <circle cx="705" cy="505" r="14" fill="#a78bfa"/><text x="705" y="510" font-size="14" font-weight="800" fill="#0b1020" text-anchor="middle">3</text>
+    <text x="730" y="511" class="stepTitle">Stay in sync</text>
+    <text x="695" y="545" class="stepText">The server keeps every</text>
+    <text x="695" y="565" class="stepText">device on the same moment</text>
+
+    <rect x="980" y="475" width="250" height="125" rx="14" class="card"/>
+    <circle cx="1010" cy="505" r="14" fill="#22d3ee"/><text x="1010" y="510" font-size="14" font-weight="800" fill="#0b1020" text-anchor="middle">4</text>
+    <text x="1035" y="511" class="stepTitle">Interact</text>
+    <text x="1000" y="545" class="stepText">Chat, react, add songs,</text>
+    <text x="1000" y="565" class="stepText">vote to skip a track</text>
+
+    <rect x="1285" y="475" width="250" height="125" rx="14" class="card"/>
+    <circle cx="1315" cy="505" r="14" fill="#22d3ee"/><text x="1315" y="510" font-size="14" font-weight="800" fill="#0b1020" text-anchor="middle">5</text>
+    <text x="1340" y="511" class="stepTitle">Stay running</text>
+    <text x="1305" y="545" class="stepText">Host or DJ drives playback,</text>
+    <text x="1305" y="565" class="stepText">room recovers after restarts</text>
+  </g>
+  <path d="M319 537 H366" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M624 537 H671" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M929 537 H976" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M1234 537 H1281" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+
+  <!-- UNDER THE HOOD -->
+  <rect x="65" y="630" width="800" height="200" rx="18" class="card"/>
+  <text x="90" y="665" class="cardTitle" style="font-size:20px">Under the hood</text>
+
+  <rect x="90" y="685" width="160" height="85" rx="12" fill="#0e7490"/>
+  <text x="170" y="722" class="layerTitle">React 19 app</text>
+  <text x="170" y="742" class="layerSub">what users see</text>
+
+  <rect x="290" y="685" width="160" height="85" rx="12" fill="#15803d"/>
+  <text x="370" y="722" class="layerTitle">Node + Express</text>
+  <text x="370" y="742" class="layerSub" style="fill:#d1fae5">REST and live sockets</text>
+
+  <rect x="490" y="685" width="160" height="85" rx="12" fill="#b45309"/>
+  <text x="570" y="722" class="layerTitle">MongoDB + Redis</text>
+  <text x="570" y="742" class="layerSub" style="fill:#fef3c7">data and fast cache</text>
+
+  <rect x="690" y="685" width="160" height="85" rx="12" fill="#6d28d9"/>
+  <text x="770" y="722" class="layerTitle">Cloudinary + email</text>
+  <text x="770" y="742" class="layerSub" style="fill:#ede9fe">media and OTP mails</text>
+
+  <path d="M253 727 H287" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M453 727 H487" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M653 727 H687" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <text x="90" y="808" class="pitch" style="font-size:13px">Apps call the API over HTTPS and join rooms over WebSockets.</text>
+
+  <!-- WHY IT HOLDS UP -->
+  <rect x="895" y="630" width="640" height="200" rx="18" class="card"/>
+  <text x="920" y="665" class="cardTitle" style="font-size:20px">Why it holds up</text>
+  <text x="920" y="702" class="item" style="font-size:15px">• Secure login: JWT, Google sign-in, optional email 2FA</text>
+  <text x="920" y="730" class="item" style="font-size:15px">• Rate limits protect the public endpoints</text>
+  <text x="920" y="758" class="item" style="font-size:15px">• Redis caching keeps trending and rooms fast</text>
+  <text x="920" y="786" class="item" style="font-size:15px">• Live room state survives a server restart</text>
+  <text x="920" y="814" class="item" style="font-size:15px">• Shipped with GitHub Actions to Azure</text>
+
+  <!-- TECH PILLS -->
+  <text x="65" y="885" class="section" style="fill:#94a3b8">BUILT WITH</text>
+  <g transform="translate(180,0)">
+    <rect x="0" y="865" width="90" height="28" rx="14" fill="#1e2749"/><text x="45" y="884" class="pillText">React 19</text>
+    <rect x="100" y="865" width="100" height="28" rx="14" fill="#1e2749"/><text x="150" y="884" class="pillText">TypeScript</text>
+    <rect x="210" y="865" width="70" height="28" rx="14" fill="#1e2749"/><text x="245" y="884" class="pillText">Vite</text>
+    <rect x="290" y="865" width="100" height="28" rx="14" fill="#1e2749"/><text x="340" y="884" class="pillText">Tailwind 4</text>
+    <rect x="400" y="865" width="90" height="28" rx="14" fill="#1e2749"/><text x="445" y="884" class="pillText">Node.js</text>
+    <rect x="500" y="865" width="95" height="28" rx="14" fill="#1e2749"/><text x="547" y="884" class="pillText">Express 5</text>
+    <rect x="605" y="865" width="100" height="28" rx="14" fill="#1e2749"/><text x="655" y="884" class="pillText">Socket.IO</text>
+    <rect x="715" y="865" width="95" height="28" rx="14" fill="#1e2749"/><text x="762" y="884" class="pillText">MongoDB</text>
+    <rect x="820" y="865" width="75" height="28" rx="14" fill="#1e2749"/><text x="857" y="884" class="pillText">Redis</text>
+    <rect x="905" y="865" width="100" height="28" rx="14" fill="#1e2749"/><text x="955" y="884" class="pillText">Cloudinary</text>
+    <rect x="1015" y="865" width="80" height="28" rx="14" fill="#1e2749"/><text x="1055" y="884" class="pillText">Docker</text>
+  </g>
+</svg>

@@ -155,8 +155,12 @@ export const getRooms = async (req: AuthRequest, res: Response): Promise<void> =
             }
         }
 
-        const rooms = await Room.find(query)
-            .sort({ isLive: -1, trendingScore: -1, updatedAt: -1 })
+        const roomsQuery = Room.find(query);
+        if (!query.location) {
+            roomsQuery.sort({ isLive: -1, trendingScore: -1, updatedAt: -1 });
+        }
+
+        const rooms = await roomsQuery
             .populate({ path: "host", select: "fullName username avatar role" })
             .lean();
 

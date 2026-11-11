@@ -14,55 +14,44 @@ export const useSessionTimeout = () => {
     const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const lastActivityRef = useRef<number>(Date.now());
-
-    const resetTimers = useCallback(() => {
-        // Clear existing timers
-        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-        if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-
-        // Hide warning if showing
-        setShowWarning(false);
-        setSecondsRemaining(0);
-
-        lastActivityRef.current = Date.now();
-
-        // Set new warning timer
-        warningTimerRef.current = setTimeout(() => {
-            setShowWarning(true);
-            setSecondsRemaining(Math.ceil(INACTIVITY_LOGOUT_TIME / 1000));
-            loggerUtils.warn("Session inactivity warning shown");
-
-            // Start countdown
-            countdownTimerRef.current = setInterval(() => {
-                setSecondsRemaining((prev) => {
-                    if (prev <= 1) {
-                        // Auto logout
-                        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-                        handleLogout();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-
-            // Set logout timer
-            logoutTimerRef.current = setTimeout(() => {
-                handleLogout();
-            }, INACTIVITY_LOGOUT_TIME);
-        }, INACTIVITY_WARNING_TIME);
-    }, []);
-
+    
     const handleLogout = useCallback(() => {
         loggerUtils.warn("Session timeout - Auto logout due to inactivity");
         authUtils.removeToken();
         navigate('/login');
     }, [navigate]);
 
-    const handleExtendSession = useCallback(() => {
+    const clearTimers = useCallback(() => {
+        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+        if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    }, []);
+
+    const scheduleWarning = useCallback(() => {
+        clearTimers();
+
+        warningTimerRef.current = setTimeout(() => {
+            setShowWarning(true);
+            setSecondsRemaining(Math.ceil(INACTIVITY_LOGOUT_TIME / 1000));
+            loggerUtils.warn("Session inactivity warning shown");
+
+            countdownTimerRef.current = setInterval(() => {
+                setSecondsRemaining((prev) => Math.max(prev - 1, 0));
+            }, 1000);
+
+            logoutTimerRef.current = setTimeout(() => {
+                handleLogout();
+            }, INACTIVITY_LOGOUT_TIME);
+        }, INACTIVITY_WARNING_TIME);
+    }, [clearTimers, handleLogout]);
+
+    const resetTimers = useCallback(() => {
         setShowWarning(false);
         setSecondsRemaining(0);
+        scheduleWarning();
+    }, [scheduleWarning]);
+
+    const handleExtendSession = useCallback(() => {
         resetTimers();
         loggerUtils.info("Session extended by user");
     }, [resetTimers]);
@@ -78,7 +67,7 @@ export const useSessionTimeout = () => {
         const handleActivity = () => {
             // Only reset if not already showing warning (warning period is for user decision)
             if (!showWarning) {
-                resetTimers();
+                scheduleWarning();
             }
         };
 
@@ -87,18 +76,16 @@ export const useSessionTimeout = () => {
         });
 
         // Initialize timers
-        resetTimers();
+        scheduleWarning();
 
         // Cleanup
         return () => {
             events.forEach((event) => {
                 document.removeEventListener(event, handleActivity);
             });
-            if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-            if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+            clearTimers();
         };
-    }, [resetTimers, showWarning]);
+    }, [scheduleWarning, clearTimers, showWarning]);
 
     return {
         showWarning,

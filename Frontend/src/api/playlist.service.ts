@@ -1,4 +1,5 @@
-import { apiClient } from './client';
+import { apiClient, API_BASE_URL } from './client';
+import { authUtils } from '../utils/auth';
 
 export type PlaylistItem = {
     id: string;
@@ -172,9 +173,6 @@ export const playlistService = {
         titleOrFormData: string | FormData,
         songId?: string
     ): Promise<{ success: boolean; playlist: PlaylistItem }> => {
-        const { API_BASE_URL } = await import('./client');
-        const { authUtils } = await import('../utils/auth');
-        
         let body: FormData;
         if (titleOrFormData instanceof FormData) {
             body = titleOrFormData;

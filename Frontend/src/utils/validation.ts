@@ -50,7 +50,7 @@ export const validationUtils = {
             };
         }
 
-        if (!/[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        if (!/[\d!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
             return {
                 isStrong: false,
                 message: "Password must contain at least one number or special character",
@@ -110,7 +110,7 @@ export const validationUtils = {
             "/": "&#x2F;",
         };
 
-        sanitized = sanitized.replace(/[&<>"'\/]/g, (char) => htmlEscapeMap[char]);
+        sanitized = sanitized.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
 
         return sanitized;
     },

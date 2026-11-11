@@ -16,40 +16,42 @@ const SocketContext = createContext<SocketContextType>({
     onlineCount: 0,
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => useContext(SocketContext);
 
 // Module-level singleton
 let globalSocket: Socket | null = null;
 
-export const SocketProvider = ({ children }: { children: ReactNode }) => {
-    const [isConnected, setIsConnected] = useState(false);
-    const [onlineCount, setOnlineCount] = useState(0);
-    const [socket, setSocket] = useState<Socket | null>(globalSocket);
-
-    useEffect(() => {
-        console.log("🧩 [SocketProvider] Mounting...");
+function getGlobalSocket(): Socket {
+    if (!globalSocket) {
         const socketUrl = API_BASE_URL.endsWith('/api') 
             ? API_BASE_URL.slice(0, -4) 
             : API_BASE_URL.replace('/api/', '/');
-        
-        if (!globalSocket) {
-            console.log("🔌 Initializing socket at:", socketUrl);
-            globalSocket = io(socketUrl, {
-                withCredentials: true,
-                autoConnect: true,
-                reconnection: true,
-                reconnectionAttempts: Infinity,
-                reconnectionDelay: 2000,
-                // Force websocket to avoid polling upgrade loops entirely
-                transports: ['websocket'], 
-                auth: {
-                    token: authUtils.getToken(),
-                },
-            });
-            setSocket(globalSocket);
-        }
+        console.log("🔌 Initializing socket at:", socketUrl);
+        globalSocket = io(socketUrl, {
+            withCredentials: true,
+            autoConnect: true,
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 2000,
+            // Force websocket to avoid polling upgrade loops entirely
+            transports: ['websocket'], 
+            auth: {
+                token: authUtils.getToken(),
+            },
+        });
+    }
+    return globalSocket;
+}
 
-        const s = globalSocket;
+export const SocketProvider = ({ children }: { children: ReactNode }) => {
+    const [isConnected, setIsConnected] = useState(false);
+    const [onlineCount, setOnlineCount] = useState(0);
+    const [socket] = useState<Socket>(() => getGlobalSocket());
+
+    useEffect(() => {
+        console.log("🧩 [SocketProvider] Mounting...");
+        const s = getGlobalSocket();
 
         function updateState() {
             setIsConnected(s.connected);
@@ -65,7 +67,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             console.log("🔴 Socket disconnected:", reason);
         };
 
-        const onConnectError = (err: any) => {
+        const onConnectError = (err: Error) => {
             console.error("❌ Socket connection error:", err);
             updateState();
         };
@@ -74,7 +76,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setOnlineCount(count);
         };
 
-        const onNewSong = (song: any) => {
+        const onNewSong = (song: { title?: string }) => {
             toast.success(`New release: "${song.title}"`, {
                 icon: '🎵',
                 position: 'bottom-right',

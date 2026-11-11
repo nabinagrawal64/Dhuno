@@ -4,6 +4,7 @@ import { loggerUtils } from "./logger";
 
 const TOKEN_KEY = "auth_token";
 const ROLE_KEY = "auth_role";
+const PENDING_REDIRECT_KEY = "pending_redirect";
 
 export type AuthRole = "user" | "artist" | "admin";
 
@@ -65,7 +66,19 @@ export const authUtils = {
         localStorage.removeItem(ROLE_KEY);
     },
 
+    savePendingRedirect: (path: string) => {
+        sessionStorage.setItem(PENDING_REDIRECT_KEY, path);
+    },
+
+    clearPendingRedirect: () => {
+        sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+    },
+
     getLandingPath: (role?: AuthRole | null) => {
+        const pending = sessionStorage.getItem(PENDING_REDIRECT_KEY);
+        if (pending && pending.startsWith("/") && !pending.startsWith("//")) {
+            return pending;
+        }
         return role === "artist" ? "/artist/dashboard" : "/home";
     },
 

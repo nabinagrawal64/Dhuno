@@ -86,8 +86,14 @@ export default function ArtistPlaylistPage() {
 
     const coverImage = playlist.coverImage || DEFAULT_COVER;
     const totalDuration = playlistSongs.reduce((acc, song) => acc + (song.duration || 0), 0);
-    const minutes = Math.floor(totalDuration / 60);
+    const hours = Math.floor(totalDuration / 3600);
+    const minutes = Math.floor((totalDuration % 3600) / 60);
     const seconds = totalDuration % 60;
+    const formattedDuration = hours > 0
+        ? `${hours}h ${minutes}m`
+        : minutes > 0
+        ? `${minutes}m ${seconds}s`
+        : `${seconds}s`;
 
     return (
         <div className="min-h-screen">
@@ -127,7 +133,7 @@ export default function ArtistPlaylistPage() {
                                 <span className="text-xs sm:text-sm">{playlistSongs.length} tracks</span>
                                 <span className="hidden sm:inline">•</span>
                                 <span className="text-xs sm:text-sm">
-                                    {minutes > 0 ? `${minutes}h ${seconds}m` : `${seconds}s`}
+                                    {formattedDuration}
                                 </span>
                                 {playlist.updatedAt && (
                                     <>

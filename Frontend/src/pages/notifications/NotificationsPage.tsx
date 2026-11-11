@@ -35,7 +35,7 @@ export default function NotificationsPage() {
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (data: any) => {
+        const handleNewNotification = (data: Partial<NotificationItem> & { sampleId?: string }) => {
             console.log("🔔 [NotificationsPage] Received live notification:", data);
             toast.success(data.message || data.title || "New notification!", {
                 icon: "🔔",
@@ -88,7 +88,7 @@ export default function NotificationsPage() {
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             await notificationService.markAllAsRead();
             toast.success("All notifications marked as read");
-        } catch (err) {
+        } catch {
             toast.error("Failed to mark all as read");
         }
     };
@@ -101,7 +101,7 @@ export default function NotificationsPage() {
                 await notificationService.deleteNotification(id);
             }
             toast.success("Notification removed");
-        } catch (err) {
+        } catch {
             toast.error("Failed to delete notification");
         }
     };
@@ -111,7 +111,7 @@ export default function NotificationsPage() {
             setNotifications([]);
             await notificationService.clearAll();
             toast.success("All notifications cleared");
-        } catch (err) {
+        } catch {
             toast.error("Failed to clear notifications");
         }
     };

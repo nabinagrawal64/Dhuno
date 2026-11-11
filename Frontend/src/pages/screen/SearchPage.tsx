@@ -16,6 +16,17 @@ const initialRecentSearches = (): string[] => {
     }
 };
 
+interface SpeechRecognitionLike {
+    lang: string;
+    interimResults: boolean;
+    continuous: boolean;
+    onstart: (() => void) | null;
+    onresult: ((event: { results?: ArrayLike<ArrayLike<{ transcript?: string }>> }) => void) | null;
+    onerror: (() => void) | null;
+    onend: (() => void) | null;
+    start: () => void;
+}
+
 export default function SearchPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -177,7 +188,7 @@ export default function SearchPage() {
     });
 
     const startVoiceSearch = () => {
-        const win = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
+        const win = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
         const SpeechRecognitionClass = win.SpeechRecognition || win.webkitSpeechRecognition;
 
         if (!SpeechRecognitionClass) {
@@ -194,9 +205,9 @@ export default function SearchPage() {
             setIsListening(true);
         };
 
-        recognition.onresult = (event: any) => {
-            const transcript = Array.from(event.results || [])
-                .map((result: any) => result[0]?.transcript ?? "")
+        recognition.onresult = (event: { results?: ArrayLike<ArrayLike<{ transcript?: string }>> }) => {
+            const transcript = Array.from(event.results ?? [])
+                .map((result) => result[0]?.transcript ?? "")
                 .join("")
                 .trim();
 

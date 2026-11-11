@@ -97,7 +97,7 @@ export default function ProfilePage() {
                 accent: 'text-on-surface'
             },
         ],
-        [profile],
+        [profile, isArtistProfile],
     );
 
     const onEditClick = () => {

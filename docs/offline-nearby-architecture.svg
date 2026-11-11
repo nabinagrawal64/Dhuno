@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 830" width="1500" height="830" font-family="Inter, 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475569"/></marker>
+<style>
+.title{font-size:24px;font-weight:700;fill:#0f172a}
+.note{font-size:13px;fill:#64748b}
+.dev{font-size:13px;font-weight:700;letter-spacing:1.2px;fill:#0f172a}
+.h{font-size:13px;font-weight:700;fill:#0f172a}
+.s{font-size:11px;fill:#334155}
+.line{stroke:#475569;stroke-width:1.6;fill:none}
+.lane{font-size:12px;font-weight:700;letter-spacing:1.2px;fill:#64748b}
+</style></defs>
+<rect width="1500" height="830" fill="#ffffff"/>
+<text x="40" y="38" class="title">Dhuno Nearby: offline listening rooms (proposal)</text>
+<text x="40" y="60" class="note">Needs a native wrapper (Capacitor). Web Bluetooth cannot advertise or accept connections, and iOS Safari lacks it.</text>
+<rect x="1180" y="26" width="14" height="14" rx="3" fill="#dbeafe" stroke="#93c5fd"/><text x="1200" y="38" class="s">existing code</text>
+<rect x="1300" y="26" width="14" height="14" rx="3" fill="#dcfce7" stroke="#4ade80"/><text x="1320" y="38" class="s">new work</text>
+<rect x="40" y="90" width="560" height="470" rx="12" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/><text x="56" y="112" class="dev">HOST DEVICE</text><rect x="60" y="130" width="520" height="50" rx="8" fill="#dbeafe" stroke="#93c5fd"/><text x="72" y="148" class="h">React UI (existing)</text><text x="72" y="164" class="s">Live session page, GlobalPlayer, PlayerContext</text><rect x="60" y="192" width="520" height="60" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="72" y="210" class="h">Room engine (new)</text><text x="72" y="226" class="s">Same events as socket.ts: play, pause, seek, queue, join</text><text x="72" y="241" class="s">Host is authority, guests follow</text><rect x="60" y="264" width="520" height="60" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="72" y="282" class="h">Transport adapter (new)</text><rect x="72" y="290" width="240" height="26" rx="6" fill="#ffffff" stroke="#93c5fd"/><text x="82" y="307" class="s">SocketTransport: online via cloud</text><rect x="328" y="290" width="240" height="26" rx="6" fill="#ffffff" stroke="#4ade80"/><text x="338" y="307" class="s">NearbyTransport: offline, direct</text><rect x="60" y="336" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="72" y="354" class="h">Clock sync (new)</text><text x="72" y="370" class="s">Ping-pong offset estimate, host says: play song X at time T</text><rect x="60" y="390" width="520" height="44" rx="8" fill="#dbeafe" stroke="#93c5fd"/><text x="72" y="408" class="h">Offline library (existing)</text><text x="72" y="424" class="s">IndexedDB songs, checked before a session starts</text><rect x="60" y="446" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="72" y="464" class="h">Native BLE plugin (new)</text><text x="72" y="480" class="s">Capacitor: advertise, scan, GATT messages</text><rect x="60" y="500" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="72" y="518" class="h">Wi-Fi Direct / Nearby plugin (new)</text><text x="72" y="534" class="s">Capacitor: bulk file transfer</text><rect x="900" y="90" width="560" height="470" rx="12" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/><text x="916" y="112" class="dev">GUEST DEVICES (1 to many)</text><rect x="920" y="130" width="520" height="50" rx="8" fill="#dbeafe" stroke="#93c5fd"/><text x="932" y="148" class="h">React UI (existing)</text><text x="932" y="164" class="s">Live session page, GlobalPlayer, PlayerContext</text><rect x="920" y="192" width="520" height="60" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="932" y="210" class="h">Room engine (new)</text><text x="932" y="226" class="s">Same events as socket.ts: play, pause, seek, queue, join</text><text x="932" y="241" class="s">Applies host events to the local player</text><rect x="920" y="264" width="520" height="60" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="932" y="282" class="h">Transport adapter (new)</text><rect x="932" y="290" width="240" height="26" rx="6" fill="#ffffff" stroke="#93c5fd"/><text x="942" y="307" class="s">SocketTransport: online via cloud</text><rect x="1188" y="290" width="240" height="26" rx="6" fill="#ffffff" stroke="#4ade80"/><text x="1198" y="307" class="s">NearbyTransport: offline, direct</text><rect x="920" y="336" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="932" y="354" class="h">Clock sync (new)</text><text x="932" y="370" class="s">Ping-pong offset estimate, host says: play song X at time T</text><rect x="920" y="390" width="520" height="44" rx="8" fill="#dbeafe" stroke="#93c5fd"/><text x="932" y="408" class="h">Offline library (existing)</text><text x="932" y="424" class="s">IndexedDB songs, checked before a session starts</text><rect x="920" y="446" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="932" y="464" class="h">Native BLE plugin (new)</text><text x="932" y="480" class="s">Capacitor: advertise, scan, GATT messages</text><rect x="920" y="500" width="520" height="44" rx="8" fill="#dcfce7" stroke="#4ade80"/><text x="932" y="518" class="h">Wi-Fi Direct / Nearby plugin (new)</text><text x="932" y="534" class="s">Capacitor: bulk file transfer</text>
+<rect x="620" y="130" width="260" height="290" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+<text x="636" y="154" class="h">Why two radio links</text>
+<text x="636" y="180" class="s" font-weight="700">BLE</text>
+<text x="636" y="196" class="s">Low power, tiny messages.</text>
+<text x="636" y="211" class="s">Good for discovery, join, and</text>
+<text x="636" y="226" class="s">play / pause / seek commands.</text>
+<text x="636" y="256" class="s" font-weight="700">Wi-Fi Direct / Nearby Connections</text>
+<text x="636" y="272" class="s">Megabytes per second.</text>
+<text x="636" y="287" class="s">Copies missing songs between</text>
+<text x="636" y="302" class="s">devices before playback.</text>
+<text x="636" y="332" class="s" font-weight="700">Audio is never streamed</text>
+<text x="636" y="348" class="s">Each device plays its own local</text>
+<text x="636" y="363" class="s">copy, scheduled to a shared</text>
+<text x="636" y="378" class="s">clock, so it stays in sync.</text>
+
+<path d="M580 468 H620" class="line" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="620" y="438" width="260" height="60" rx="10" fill="#ede9fe" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="636" y="459" class="h">Bluetooth LE link</text>
+<text x="636" y="476" class="s">room advert, join, commands,</text>
+<text x="636" y="491" class="s">clock pings</text>
+<path d="M880 468 H920" class="line" marker-start="url(#a)" marker-end="url(#a)"/>
+
+<path d="M580 522 H620" class="line" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="620" y="508" width="260" height="60" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="636" y="529" class="h">Wi-Fi Direct / Nearby link</text>
+<text x="636" y="546" class="s">song files the other device</text>
+<text x="636" y="561" class="s">is missing</text>
+<path d="M880 522 H920" class="line" marker-start="url(#a)" marker-end="url(#a)"/>
+
+<rect x="40" y="610" width="1420" height="56" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="6 4"/>
+<text x="56" y="632" class="h">Existing cloud backend (Express, Socket.IO, MongoDB, Redis)</text>
+<text x="56" y="650" class="s">Used when online through SocketTransport. After an offline session, history and plays can sync back once connectivity returns.</text>
+<path d="M320 560 V610" class="line" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<path d="M1180 560 V610" class="line" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="332" y="590" class="s">online mode</text>
+<text x="1192" y="590" class="s">online mode</text>
+
+<text x="40" y="700" class="lane">SESSION FLOW</text>
+<rect x="40" y="712" width="273" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/><circle cx="64" cy="736" r="12" fill="#0f172a"/><text x="64" y="741" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">1</text><text x="86" y="741" class="h">Host creates room</text><text x="56" y="766" class="s">Advertises over BLE</text><path d="M315 748 H325" class="line" marker-end="url(#a)"/><rect x="327" y="712" width="273" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/><circle cx="351" cy="736" r="12" fill="#0f172a"/><text x="351" y="741" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">2</text><text x="373" y="741" class="h">Guests scan and join</text><text x="343" y="766" class="s">Pick the room, handshake</text><path d="M602 748 H612" class="line" marker-end="url(#a)"/><rect x="614" y="712" width="273" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/><circle cx="638" cy="736" r="12" fill="#0f172a"/><text x="638" y="741" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">3</text><text x="660" y="741" class="h">Share missing songs</text><text x="630" y="766" class="s">Wi-Fi Direct copies files</text><path d="M889 748 H899" class="line" marker-end="url(#a)"/><rect x="901" y="712" width="273" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/><circle cx="925" cy="736" r="12" fill="#0f172a"/><text x="925" y="741" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">4</text><text x="947" y="741" class="h">Sync clocks</text><text x="917" y="766" class="s">Offset from ping-pong</text><path d="M1176 748 H1186" class="line" marker-end="url(#a)"/><rect x="1188" y="712" width="273" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/><circle cx="1212" cy="736" r="12" fill="#0f172a"/><text x="1212" y="741" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">5</text><text x="1234" y="741" class="h">Play together</text><text x="1204" y="766" class="s">Host sends: play X at T</text></svg>

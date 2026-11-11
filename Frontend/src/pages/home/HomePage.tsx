@@ -43,7 +43,7 @@ export default function HomePage() {
 
     const featuredTrack = currentSong || recentSongs[0] || trendingSongs[0] || null;
     const featuredTitle = featuredTrack?.title || "Featured Dhuno Music";
-    const featuredArtist = featuredTrack?.artistName || (featuredTrack as any)?.artist?.name || (featuredTrack as any)?.artist?.username || "Top Artists";
+    const featuredArtist = featuredTrack?.artistName || (featuredTrack as { artist?: { name?: string; username?: string } } | null)?.artist?.name || (featuredTrack as { artist?: { name?: string; username?: string } } | null)?.artist?.username || "Top Artists";
     const featuredCover = featuredTrack?.coverImage || "/images/earth_lens_studio.png";
     const isFeaturedPlaying = Boolean(currentSong && featuredTrack && currentSong._id === featuredTrack._id && isPlaying);
     const isFeaturedLiked = Boolean(featuredTrack && likedSongs.some(s => s._id === featuredTrack._id));

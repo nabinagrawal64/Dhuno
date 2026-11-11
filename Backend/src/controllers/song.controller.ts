@@ -311,7 +311,7 @@ export const searchSongs = async (
                 { artistName: { $regex: regex } }
             ]
         })
-        .populate("artist", "fullName username avatar")
+        .populate("artist", "name username avatar verified")
         .limit(20);
 
         res.status(200).json({
@@ -344,7 +344,7 @@ export const getTrendingSongs = async (
         const songs = await Song.find({})
             .sort({ plays: -1 })
             .limit(10)
-            .populate("artist", "fullName username avatar verified");
+            .populate("artist", "name username avatar verified");
 
         await redisSetJson(TRENDING_SONGS_CACHE_KEY, songs, TRENDING_SONGS_CACHE_TTL);
 

@@ -2,10 +2,10 @@ import Redis from "ioredis";
 
 let redisClient: Redis | null = null;
 
-export const isRedisConfigured = Boolean(process.env.REDIS_URL);
+export const isRedisConfigured = (): boolean => Boolean(process.env.REDIS_URL);
 
 export const getRedisClient = (): Redis | null => {
-    if (!isRedisConfigured) {
+    if (!isRedisConfigured()) {
         return null;
     }
 

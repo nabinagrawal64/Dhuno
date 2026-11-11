@@ -13,6 +13,7 @@ export default function ProtectedRoute({
 
     // If user is NOT authenticated, redirect to login
     if (!authUtils.isAuthenticated()) {
+        authUtils.savePendingRedirect(`${location.pathname}${location.search}`);
         return <Navigate to="/login" replace />;
     }
 
@@ -36,6 +37,6 @@ export default function ProtectedRoute({
         return <Navigate to={fallbackPath} replace />;
     }
 
-    // Otherwise render the protected page
+    authUtils.clearPendingRedirect();
     return <>{children}</>;
 }

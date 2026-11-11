@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 980" width="1400" height="980" font-family="Inter, 'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .title { font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-size: 13px; fill: #64748b; }
+      .lane { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
+      .h { font-size: 13px; font-weight: 700; fill: #0f172a; }
+      .s { font-size: 11px; fill: #334155; }
+      .xs { font-size: 10px; fill: #475569; }
+      .lbl { font-size: 11px; font-weight: 600; fill: #334155; }
+      .line { stroke: #475569; stroke-width: 1.6; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="980" fill="#ffffff"/>
+
+  <text x="40" y="38" class="title">Dhuno: system design</text>
+  <text x="40" y="58" class="subtitle">Context-aware music streaming with live, synchronized listening rooms</text>
+
+  <!-- CLIENT LANE -->
+  <rect x="24" y="72" width="1352" height="168" rx="14" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="40" y="88" class="lane" fill="#1d4ed8">CLIENT</text>
+
+  <rect x="40" y="96" width="860" height="132" rx="10" fill="#ffffff" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="56" y="116" class="h">React 19 SPA (Vite, Tailwind 4, TypeScript)</text>
+  <text x="880" y="116" class="xs" text-anchor="end">served by Vercel, or Docker + nginx</text>
+
+  <rect x="60" y="140" width="190" height="72" rx="8" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="72" y="160" class="h">Pages (React Router 7)</text>
+  <text x="72" y="177" class="s">auth, home, search, library</text>
+  <text x="72" y="192" class="s">rooms, profile, artist studio</text>
+
+  <rect x="265" y="140" width="190" height="72" rx="8" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="277" y="160" class="h">Offline + session</text>
+  <text x="277" y="177" class="s">IndexedDB song downloads</text>
+  <text x="277" y="192" class="s">JWT store, idle timeout</text>
+
+  <rect x="470" y="140" width="200" height="72" rx="8" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="482" y="160" class="h">API services</text>
+  <text x="482" y="177" class="s">fetch + Bearer JWT + CSRF</text>
+  <text x="482" y="192" class="s">auth, song, playlist, room</text>
+
+  <rect x="685" y="140" width="200" height="72" rx="8" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="697" y="160" class="h">Context providers</text>
+  <text x="697" y="177" class="s">Socket, Player, Theme</text>
+  <text x="697" y="192" class="s">GlobalPlayer, hooks</text>
+
+  <rect x="960" y="96" width="220" height="132" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+  <text x="976" y="120" class="h">Google OAuth</text>
+  <text x="976" y="142" class="s">One-tap sign-in</text>
+  <text x="976" y="158" class="s">returns an ID token that the</text>
+  <text x="976" y="174" class="s">backend verifies on</text>
+  <text x="976" y="190" class="s">POST /api/auth/google</text>
+
+  <rect x="1210" y="96" width="150" height="132" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+  <text x="1226" y="120" class="h">CI / CD</text>
+  <text x="1226" y="142" class="s">GitHub Actions</text>
+  <text x="1226" y="158" class="s">builds Backend and</text>
+  <text x="1226" y="174" class="s">deploys to Azure</text>
+  <text x="1226" y="190" class="s">Web App on push</text>
+
+  <path d="M900 162 H960" class="line" marker-end="url(#arrow)"/>
+
+  <!-- CLIENT <-> BACKEND -->
+  <path d="M570 212 V330" class="line" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="582" y="274" class="lbl">REST  /api/*</text>
+  <text x="582" y="288" class="xs">HTTPS, JSON, multipart</text>
+
+  <path d="M785 212 V330" stroke="#7c3aed" stroke-width="1.8" fill="none" marker-start="url(#arrowAccent)" marker-end="url(#arrowAccent)"/>
+  <text x="797" y="274" class="lbl" fill="#6d28d9" style="fill:#6d28d9">WebSocket (Socket.IO)</text>
+  <text x="797" y="288" class="xs">realtime room events</text>
+
+  <!-- BACKEND LANE -->
+  <rect x="24" y="300" width="1352" height="352" rx="14" fill="#f0fdf4" stroke="#bbf7d0"/>
+  <text x="40" y="316" class="lane" fill="#15803d">BACKEND</text>
+  <text x="1360" y="316" class="xs" text-anchor="end">Node 24, one HTTP server hosts both Express and Socket.IO</text>
+
+  <!-- Express -->
+  <rect x="40" y="330" width="650" height="306" rx="10" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="56" y="352" class="h">Express 5 REST API</text>
+
+  <rect x="60" y="366" width="610" height="44" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="72" y="384" class="h">Middleware</text>
+  <text x="72" y="400" class="s">CORS allow-list, cookie-parser, rate limiters (Redis store), JWT protect, multer upload</text>
+
+  <rect x="60" y="426" width="112" height="40" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="70" y="443" class="h">/auth</text><text x="70" y="458" class="xs">login, 2FA, reset</text>
+  <rect x="180" y="426" width="112" height="40" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="190" y="443" class="h">/songs</text><text x="190" y="458" class="xs">upload, search</text>
+  <rect x="300" y="426" width="112" height="40" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="310" y="443" class="h">/playlists</text><text x="310" y="458" class="xs">CRUD, reorder</text>
+  <rect x="420" y="426" width="112" height="40" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="430" y="443" class="h">/rooms</text><text x="430" y="458" class="xs">join, queue, DJ</text>
+  <rect x="540" y="426" width="130" height="40" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="550" y="443" class="h">/notifications</text><text x="550" y="458" class="xs">in-app alerts</text>
+
+  <rect x="60" y="482" width="610" height="50" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="72" y="502" class="h">Controllers</text>
+  <text x="72" y="519" class="s">business logic, validation, ownership checks, trigger socket events and emails</text>
+
+  <rect x="60" y="548" width="610" height="72" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="72" y="568" class="h">Mongoose models</text>
+  <text x="72" y="586" class="s">User, Artist, Song, Playlist, Room, Message</text>
+  <text x="72" y="602" class="s">Clip, Notification, SearchHistory</text>
+
+  <!-- event bus -->
+  <path d="M690 507 H700" class="line"/>
+  <rect x="700" y="472" width="60" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="730" y="503" class="h" text-anchor="middle">event</text>
+  <text x="730" y="519" class="h" text-anchor="middle">bus</text>
+  <text x="730" y="533" class="xs" text-anchor="middle">EventEmitter</text>
+  <path d="M760 507 H770" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Socket.IO -->
+  <rect x="770" y="330" width="590" height="306" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="786" y="352" class="h">Socket.IO realtime server</text>
+
+  <rect x="790" y="366" width="550" height="44" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="802" y="384" class="h">Handshake auth</text>
+  <text x="802" y="400" class="s">JWT verified per socket, user loaded, joins room channels, tracks online count</text>
+
+  <rect x="790" y="426" width="130" height="70" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="800" y="444" class="h">Playback</text>
+  <text x="800" y="460" class="xs">play, pause, seek, next</text>
+  <text x="800" y="474" class="xs">playback_sync</text>
+  <text x="800" y="488" class="xs">clock-synced start time</text>
+
+  <rect x="930" y="426" width="130" height="70" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="940" y="444" class="h">Queue</text>
+  <text x="940" y="460" class="xs">add, reorder, remove</text>
+  <text x="940" y="474" class="xs">vote_skip</text>
+  <text x="940" y="488" class="xs">snapshot to Redis</text>
+
+  <rect x="1070" y="426" width="130" height="70" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="1080" y="444" class="h">Social</text>
+  <text x="1080" y="460" class="xs">chat, reactions</text>
+  <text x="1080" y="474" class="xs">join, leave</text>
+  <text x="1080" y="488" class="xs">participant list</text>
+
+  <rect x="1210" y="426" width="130" height="70" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="1220" y="444" class="h">Roles</text>
+  <text x="1220" y="460" class="xs">toggle_dj, assign_dj</text>
+  <text x="1220" y="474" class="xs">only host or DJ may</text>
+  <text x="1220" y="488" class="xs">control playback</text>
+
+  <rect x="790" y="512" width="550" height="44" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="802" y="530" class="h">In-memory room state (Map per room)</text>
+  <text x="802" y="546" class="s">current song, queue, participants, DJ, skip votes; rebuilt from Redis, then Mongo, after restart</text>
+
+  <rect x="790" y="568" width="550" height="52" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="802" y="588" class="h">Presence</text>
+  <text x="802" y="606" class="s">30 s heartbeat refreshes a 90 s Redis key, stale sockets are cleaned out</text>
+
+  <!-- DATA BUS -->
+  <path d="M370 636 V680" class="line"/>
+  <path d="M1050 636 V680" class="line"/>
+  <path d="M190 680 H1195" class="line"/>
+  <path d="M190 680 V722" class="line" marker-end="url(#arrow)"/>
+  <path d="M520 680 V722" class="line" marker-end="url(#arrow)"/>
+  <path d="M850 680 V722" class="line" marker-end="url(#arrow)"/>
+  <path d="M1195 680 V722" class="line" marker-end="url(#arrow)"/>
+  <text x="1210" y="672" class="xs">REST and Socket handlers share these stores</text>
+
+  <!-- DATA LANE -->
+  <rect x="24" y="690" width="1352" height="218" rx="14" fill="#fffbeb" stroke="#fde68a"/>
+  <text x="40" y="706" class="lane" fill="#b45309">DATA AND EXTERNAL SERVICES</text>
+
+  <rect x="40" y="728" width="300" height="164" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="56" y="750" class="h">MongoDB (Mongoose)</text>
+  <text x="56" y="767" class="xs">Source of truth</text>
+  <text x="56" y="790" class="s">users, artists, songs</text>
+  <text x="56" y="806" class="s">playlists, rooms, clips</text>
+  <text x="56" y="822" class="s">messages, notifications</text>
+  <text x="56" y="838" class="s">search history</text>
+  <text x="56" y="868" class="xs">Sockets read it only to rebuild a cold room</text>
+
+  <rect x="370" y="728" width="300" height="164" rx="10" fill="#ffffff" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="386" y="750" class="h">Redis (ioredis)</text>
+  <text x="386" y="767" class="xs">Fast, expiring state, optional</text>
+  <text x="386" y="790" class="s">trending songs cache, 5 min</text>
+  <text x="386" y="806" class="s">room state and queue snapshot, 1 h</text>
+  <text x="386" y="822" class="s">presence keys, 90 s</text>
+  <text x="386" y="838" class="s">rate-limit counters</text>
+  <text x="386" y="868" class="xs">Code skips Redis calls when no client is connected</text>
+
+  <rect x="700" y="728" width="300" height="164" rx="10" fill="#ffffff" stroke="#0ea5e9" stroke-width="1.5"/>
+  <text x="716" y="750" class="h">Cloudinary</text>
+  <text x="716" y="767" class="xs">Media storage</text>
+  <text x="716" y="790" class="s">song audio files</text>
+  <text x="716" y="806" class="s">cover art, avatars, clips</text>
+  <text x="716" y="822" class="s">multer buffer streamed up</text>
+  <text x="716" y="838" class="s">music-metadata reads duration</text>
+
+  <rect x="1030" y="728" width="330" height="164" rx="10" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/>
+  <text x="1046" y="750" class="h">SMTP (Nodemailer)</text>
+  <text x="1046" y="767" class="xs">Transactional email</text>
+  <text x="1046" y="790" class="s">password reset OTP</text>
+  <text x="1046" y="806" class="s">2FA enable and login OTP</text>
+  <text x="1046" y="822" class="s">password changed notice</text>
+
+  <!-- FOOTER NOTES -->
+  <text x="40" y="934" class="s"><tspan font-weight="700">Auth:</tspan> bcrypt passwords, JWT as Bearer header and httpOnly cookie, Google sign-in, optional email 2FA, per-route rate limits.</text>
+  <text x="40" y="954" class="s"><tspan font-weight="700">Not wired yet:</tspan> BullMQ is in package.json but unused in src. Backend EC2 workflow is commented out, Azure Web App workflow is the live deploy.</text>
+</svg>

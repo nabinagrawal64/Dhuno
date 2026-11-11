@@ -164,14 +164,14 @@ function readStoredPlaylists(): PlayerPlaylist[] {
                 id: typeof playlist?.id === 'string' ? playlist.id : '',
                 name: typeof playlist?.name === 'string' ? playlist.name : '',
                 songs: Array.isArray(playlist?.songs)
-                    ? playlist.songs.map((s: any) => ({
+                    ? playlist.songs.map((s: Record<string, unknown>) => ({
                         _id: typeof s?._id === 'string' ? s._id : (typeof s === 'string' ? s : ''),
                         title: typeof s?.title === 'string' ? s.title : '',
                         artistName: typeof s?.artistName === 'string' ? s.artistName : '',
                         coverImage: typeof s?.coverImage === 'string' ? s.coverImage : '',
                         duration: typeof s?.duration === 'number' ? s.duration : 0,
                         audioUrl: typeof s?.audioUrl === 'string' ? s.audioUrl : '',
-                    })).filter((s: any) => s._id)
+                    })).filter((s) => s._id)
                     : [],
                 createdAt: typeof playlist?.createdAt === 'number' ? playlist.createdAt : Date.now(),
                 updatedAt: typeof playlist?.updatedAt === 'number' ? playlist.updatedAt : Date.now(),
@@ -629,6 +629,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlayer() {
     const ctx = useContext(PlayerContext);
     if (!ctx) throw new Error('usePlayer must be used inside PlayerProvider');

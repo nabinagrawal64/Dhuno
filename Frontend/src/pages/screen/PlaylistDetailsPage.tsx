@@ -49,20 +49,14 @@ function formatTime(sec?: number) {
     return `${minutes}:${seconds}`;
 }
 
-interface SortableSongRowProps {
-    song: PlaylistSong;
-    idx: number;
-    onPlay: () => void;
-}
-
 interface SongRowProps {
     song: PlaylistSong;
     idx: number;
     onPlay: () => void;
     dragHandle?: boolean;
     dragProps?: {
-        attributes?: any;
-        listeners?: any;
+        attributes?: object;
+        listeners?: object;
     };
     isDragging?: boolean;
     onDownload?: () => void;
